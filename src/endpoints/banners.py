@@ -1,7 +1,7 @@
 from flask import Blueprint, redirect, current_app, make_response, request, app
 # @REVIEW: no relative imports outside modules in the same folder
 # @RESPONSE: done
-from srcinternals.utils.scrapper import create_scrapper_session
+from src.internals.utils.scrapper import create_scrapper_session
 from src.internals.utils.download import download_branding
 from src.internals.utils.proxy import get_proxy
 import config
@@ -73,21 +73,21 @@ service_banner_information = {
 
 def download_banner(service, user):
     service_data = service_banner_information.get(service)
-    service_banners_path: Path = join(icon_path, service)
+    service_banners_path: Path = join(banners_path, service)
     try:
         # @REVIEW: same issues as paths in `icons`` module
         # @RESPONSE: icons.pyL
         if service_data and not exists(join(service_banners_path, user)):
-            makedirs(join(config.download_path, 'banners', service), exist_ok=True)
+            makedirs(service_banners_path, exist_ok=True)
             scraper = create_scrapper_session(useCloudscraper=service_data['cloudflare']).get(service_data['data_url'].format(user), headers=service_data['data_req_headers'], proxies=get_proxy())
             scraper.raise_for_status()
             data = scraper.json() if service_data['data_type'] == ServiceDataType.JSON else scraper.text
-            download_branding(join(config.download_path, 'banners', service), service_data['banner_url'](data), name=user)
+            download_branding(service_banners_path, service_data['banner_url'](data), name=user)
     except Exception:
         logging.exception(f'Exception when downloading banner for user {user} on {service}')
         # @REVIEW: the same issue as `icons` module
         # @RESPONSE: see icons.pyL124
-        with open(join(config.download_path, 'banners', service, user), 'w') as _:
+        with open(join(service_banners_path, user), 'w') as _:
             pass
 
 
