@@ -1,4 +1,5 @@
 from flask import Blueprint, redirect, current_app, make_response, request, app
+# @REVIEW: relative imports are only for modules in the same folder
 from ..internals.utils.scrapper import create_scrapper_session
 from ..internals.utils.download import download_branding
 from ..internals.utils.proxy import get_proxy
@@ -18,6 +19,8 @@ from threading import Thread
 icons = Blueprint('icons', __name__)
 
 
+# @REVIEW: enum members are not actually primitives
+# so either refer to them as `ENUM.MEMBER.value` or use `IntEnum` as base
 class ServiceDataType(Enum):
     HTML = 1
     JSON = 2
@@ -25,9 +28,13 @@ class ServiceDataType(Enum):
 
 class IconInformationEntry(TypedDict):
     cloudflare: bool
+    # @REVIEW: This should be a function which accepts an argument and returns a string.
+    # However if the outside code runs `str.format()` on the value, leave it as as,
+    # but use kwargs for interpolations at least if it's not out of PR scope
     data_url: str
     data_req_headers: dict
     data_type: ServiceDataType
+    # @REVIEW: it isn't referred by this name in initializations
     get_icon_url: Callable
 
 
@@ -80,7 +87,12 @@ service_icon_information = {
 def download_icon(service, user):
     service_data = service_icon_information.get(service)
     try:
+        # @REVIEW: The base `icons` folder path is known before the call of the function,
+        # so either declare it as variable in the module scope or in `configs.derived_vars` module.
+        # Declare paths as `Path` from `pathlib` and convert them to strings
+        # if the consuming function requires a path string and rewriting the consumer is out of PR scope.
         if service_data and not exists(join(config.download_path, 'icons', service, user)):
+            # @REVIEW: The path of `service` folder is used several times so it's better to save it in a variable beforehand.
             makedirs(join(config.download_path, 'icons', service), exist_ok=True)
             scraper = create_scrapper_session(useCloudscraper=service_data['cloudflare']).get(service_data['data_url'].format(user), headers=service_data['data_req_headers'], proxies=get_proxy())
             scraper.raise_for_status()
@@ -88,9 +100,12 @@ def download_icon(service, user):
             download_branding(join(config.download_path, 'icons', service), service_data['icon_url'](data), name=user)
     except Exception:
         logging.exception(f'Exception when downloading icon for user {user} on {service}')
-        with open(join(config.download_path, 'icons', service, user), 'w') as _: 
+        # @REVIEW: why open a context manager on error?
+        with open(join(config.download_path, 'icons', service, user), 'w') as _:
             pass
 
+
+# @REVIEW: use `get()`, `post()`, etc. methods to declare single-method routes
 @icons.route('/icons/<service>/<user>')
 def import_icon(service, user):
     Thread(target=download_icon, args=(service, user)).start()

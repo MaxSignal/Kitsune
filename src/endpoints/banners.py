@@ -1,4 +1,5 @@
 from flask import Blueprint, redirect, current_app, make_response, request, app
+# @REVIEW: no relative imports outside modules in the same folder
 from ..internals.utils.scrapper import create_scrapper_session
 import config
 import requests
@@ -15,6 +16,8 @@ from ..internals.utils.proxy import get_proxy
 
 banners = Blueprint('banners', __name__)
 
+
+# @REVIEW: same issues as icons enum
 class ServiceDataType(Enum):
     HTML = 1
     JSON = 2
@@ -22,10 +25,13 @@ class ServiceDataType(Enum):
 
 class BannerInformationEntry(TypedDict):
     cloudflare: bool
+    # @REVIEW the same issues as `data_url` in icons dict
     data_url: str
     data_req_headers: dict
     data_type: ServiceDataType
+    # @REVIEW: it's not initialized by this name
     get_banner_url: Callable
+
 
 service_banner_information = {
     'patreon': BannerInformationEntry(
@@ -58,9 +64,11 @@ service_banner_information = {
     )
 }
 
+
 def download_banner(service, user):
     service_data = service_banner_information.get(service)
     try:
+        # @REVIEW: same issues as paths in `icons`` module
         if service_data and not exists(join(config.download_path, 'banners', service, user)):
             makedirs(join(config.download_path, 'banners', service), exist_ok=True)
             scraper = create_scrapper_session(useCloudscraper=service_data['cloudflare']).get(service_data['data_url'].format(user), headers=service_data['data_req_headers'], proxies=get_proxy())
@@ -69,9 +77,12 @@ def download_banner(service, user):
             download_branding(join(config.download_path, 'banners', service), service_data['banner_url'](data), name=user)
     except Exception:
         logging.exception(f'Exception when downloading banner for user {user} on {service}')
-        with open(join(config.download_path, 'banners', service, user), 'w') as _: 
+        # @REVIEW: the same issue as `icons` module
+        with open(join(config.download_path, 'banners', service, user), 'w') as _:
             pass
 
+
+# @REVIEW: same issue as `icons` module
 @banners.route('/banners/<service>/<user>')
 def import_banner(service, user):
     Thread(target=download_banner, args=(service, user)).start()
