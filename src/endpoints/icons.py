@@ -1,8 +1,9 @@
 from flask import Blueprint, redirect, current_app, make_response, request, app
 # @REVIEW: relative imports are only for modules in the same folder
-from ..internals.utils.scrapper import create_scrapper_session
-from ..internals.utils.download import download_branding
-from ..internals.utils.proxy import get_proxy
+# @RESPONSE: done
+from src.internals.utils.scrapper import create_scrapper_session
+from src.internals.utils.download import download_branding
+from src.internals.utils.proxy import get_proxy
 import re
 import cssutils
 import config
@@ -12,16 +13,19 @@ import logging
 from os import makedirs
 from os.path import exists, join
 from bs4 import BeautifulSoup
-from enum import Enum
+from pathlib import Path
+from enum import IntEnum
 from typing import TypedDict, Callable
 from threading import Thread
 
 icons = Blueprint('icons', __name__)
 
+icon_path = join(config.download_path, 'icons')
 
 # @REVIEW: enum members are not actually primitives
 # so either refer to them as `ENUM.MEMBER.value` or use `IntEnum` as base
-class ServiceDataType(Enum):
+# @RESPONSE: done
+class ServiceDataType(IntEnum):
     HTML = 1
     JSON = 2
 
@@ -31,15 +35,18 @@ class IconInformationEntry(TypedDict):
     # @REVIEW: This should be a function which accepts an argument and returns a string.
     # However if the outside code runs `str.format()` on the value, leave it as as,
     # but use kwargs for interpolations at least if it's not out of PR scope
+    # @RESPONSE: What do you mean in the last bit about kwargs with str.format()? Don't recall a clean way where that can be done.
     data_url: str
     data_req_headers: dict
     data_type: ServiceDataType
     # @REVIEW: it isn't referred by this name in initializations
+    # @RESPONSE: The `lambda` type doesn't exist...
     get_icon_url: Callable
 
 
 # @REVIEW: use `get()`, `post()`, etc. methods to declare single-method routes
-@icons.route('/icons/<service>/<user>')
+# @RESPONSE: done
+@icons.get('/icons/<service>/<user>')
 def import_icon(service, user):
     Thread(target=download_icon, args=(service, user)).start()
     response = make_response()
@@ -96,14 +103,17 @@ service_icon_information = {
 
 def download_icon(service, user):
     service_data = service_icon_information.get(service)
+    service_icon_path: Path = join(icon_path, service)
     try:
         # @REVIEW: The base `icons` folder path is known before the call of the function,
         # so either declare it as variable in the module scope or in `configs.derived_vars` module.
         # Declare paths as `Path` from `pathlib` and convert them to strings
         # if the consuming function requires a path string and rewriting the consumer is out of PR scope.
-        if service_data and not exists(join(config.download_path, 'icons', service, user)):
+        # @RESPONSE: done
+        if service_data and not exists(join(service_icon_path, user)):
             # @REVIEW: The path of `service` folder is used several times so it's better to save it in a variable beforehand.
-            makedirs(join(config.download_path, 'icons', service), exist_ok=True)
+            # @RESPONSE: done
+            makedirs(service_icon_path, exist_ok=True)
             scraper = create_scrapper_session(useCloudscraper=service_data['cloudflare']).get(service_data['data_url'].format(user), headers=service_data['data_req_headers'], proxies=get_proxy())
             scraper.raise_for_status()
             data = scraper.json() if service_data['data_type'] == ServiceDataType.JSON else scraper.text
@@ -111,5 +121,6 @@ def download_icon(service, user):
     except Exception:
         logging.exception(f'Exception when downloading icon for user {user} on {service}')
         # @REVIEW: why open a context manager on error?
-        with open(join(config.download_path, 'icons', service, user), 'w') as _:
+        # @RESPONSE: To create an empty file. It's intended to simply prevent future requests for the same user if there is an issue.
+        with open(join(service_icon_path, user), 'w') as _:
             pass
