@@ -720,6 +720,7 @@ def import_campaign_page(url, key, import_id, contributor_id = None, allowed_to_
     flagged_post_ids_of_users = {}
     comment_ids_of_users = {}
     user_id = None
+    wasCampaignUpdated = False
     while True:
         for post in scraper_data['data']:
             try:
@@ -746,6 +747,7 @@ def import_campaign_page(url, key, import_id, contributor_id = None, allowed_to_
                 if len(list(filter(lambda post: post['id'] == post_id, post_ids_of_users[user_id]))) > 0 and len(list(filter(lambda flag: flag['id'] == post_id, flagged_post_ids_of_users[user_id]))) == 0:
                     log(import_id, f'Skipping post {post_id} from user {user_id} because already exists', to_client = True)
                     continue
+                
                 log(import_id, f"Starting import: {post_id} from user {user_id}")
 
                 post_model = {
@@ -864,12 +866,12 @@ def import_campaign_page(url, key, import_id, contributor_id = None, allowed_to_
                     return_conn(conn)
 
                 delete_post_flags('patreon', user_id, post_id)
-                update_artist('patreon', user_id)
-                
+
                 if (config.ban_url):
                     requests.request('BAN', f"{config.ban_url}/{post_model['service']}/user/" + post_model['"user"'])
 
                 log(import_id, f"Finished importing {post_id} from user {user_id}", to_client=False)
+                wasCampaignUpdated = True
             except Exception as e:
                 log(import_id, f"Error while importing {post_id} from user {user_id}", 'exception', True)
                 continue
@@ -885,7 +887,8 @@ def import_campaign_page(url, key, import_id, contributor_id = None, allowed_to_
                 return
         else:
             delete_artist_cache_keys('patreon', user_id)
-            
+            if wasCampaignUpdated:
+                update_artist('patreon', user_id)
             log(import_id, f"Finished scanning for posts.")
             return
 

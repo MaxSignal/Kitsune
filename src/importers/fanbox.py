@@ -228,6 +228,7 @@ def import_posts_via_id(import_id, key, campaign_id, contributor_id=None, allowe
             log(import_id, f"An error occured while saving your key for auto-import.", 'exception')
     
     user_id = None
+    wasCampaignUpdated = False
     dnp = get_all_dnp()
     post_ids_of_users = {}
     flagged_post_ids_of_users = {}
@@ -380,14 +381,13 @@ def import_posts_via_id(import_id, key, campaign_id, contributor_id=None, allowe
                     finally:
                         return_conn(conn)
 
-                    update_artist('fanbox', user_id)
                     delete_post_flags('fanbox', user_id, post_id)
 
                     if (config.ban_url):
                         requests.request('BAN', f"{config.ban_url}/{post_model['service']}/user/" + post_model['"user"'])
-                    delete_artist_cache_keys('fanbox', user_id)
 
                     log(import_id, f'Finished importing {post_id} for user {user_id}', to_client = False)
+                    wasCampaignUpdated = True
                 except Exception as e:
                     log(import_id, f'Error importing post {post_id} from user {user_id}', 'exception')
                     continue
@@ -407,6 +407,9 @@ def import_posts_via_id(import_id, key, campaign_id, contributor_id=None, allowe
                     log(import_id, f'HTTP error when contacting Fanbox API ({url}). Stopping import.', 'exception')
                     return
             else:
+                delete_artist_cache_keys('fanbox', user_id)
+                if wasCampaignUpdated:
+                    update_artist('fanbox', user_id)
                 return
     else:
         log(import_id, f'No posts detected.')

@@ -90,6 +90,7 @@ def import_fanclub(fanclub_id, import_id, jar, page = 1):
     
     scraped_posts = BeautifulSoup(scraper_data, 'html.parser').select('div.post')
     user_id = None
+    wasFanclubUpdated = False
     dnp = get_all_dnp()
     post_ids_of_users = {}
     flagged_post_ids_of_users = {}
@@ -242,6 +243,7 @@ def import_fanclub(fanclub_id, import_id, jar, page = 1):
                     requests.request('BAN', f"{config.ban_url}/{post_model['service']}/user/" + post_model['"user"'])
     
                 log(import_id, f"Finished importing {post_id} from user {user_id}", to_client=False)
+                wasFanclubUpdated = True
             except Exception:
                 log(import_id, f'Error importing post {post_id} from user {user_id}', 'exception')
                 
@@ -264,7 +266,8 @@ def import_fanclub(fanclub_id, import_id, jar, page = 1):
                 return
         else:
             delete_artist_cache_keys('fantia', user_id)
-            update_artist('fantia', user_id)
+            if wasFanclubUpdated:
+                update_artist('fantia', user_id)
             return
 
 def get_paid_fanclubs(import_id, jar):
