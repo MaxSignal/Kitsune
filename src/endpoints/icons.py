@@ -38,6 +38,16 @@ class IconInformationEntry(TypedDict):
     get_icon_url: Callable
 
 
+# @REVIEW: use `get()`, `post()`, etc. methods to declare single-method routes
+@icons.route('/icons/<service>/<user>')
+def import_icon(service, user):
+    Thread(target=download_icon, args=(service, user)).start()
+    response = make_response()
+    response.headers['Refresh'] = f'10; url={request.full_path}'
+    response.autocorrect_location_header = False
+    return response
+
+
 def get_gumroad_icon_url(data):
     soup = BeautifulSoup(data, 'html.parser')
     sheet = cssutils.css.CSSStyleSheet()
@@ -103,13 +113,3 @@ def download_icon(service, user):
         # @REVIEW: why open a context manager on error?
         with open(join(config.download_path, 'icons', service, user), 'w') as _:
             pass
-
-
-# @REVIEW: use `get()`, `post()`, etc. methods to declare single-method routes
-@icons.route('/icons/<service>/<user>')
-def import_icon(service, user):
-    Thread(target=download_icon, args=(service, user)).start()
-    response = make_response()
-    response.headers['Refresh'] = f'10; url={request.full_path}'
-    response.autocorrect_location_header = False
-    return response
