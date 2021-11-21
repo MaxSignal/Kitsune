@@ -392,8 +392,8 @@ def import_posts_via_id(import_id, key, campaign_id, contributor_id=None, allowe
                     log(import_id, f'Error importing post {post_id} from user {user_id}', 'exception')
                     continue
             
-            if scraper_data['data'].get('nextUrl'):
-                url = scraper_data['data'].get('nextUrl')
+            if scraper_data['body'].get('nextUrl'):
+                url = scraper_data['body'].get('nextUrl')
                 try:
                     scraper = create_scrapper_session().get(
                         url,
