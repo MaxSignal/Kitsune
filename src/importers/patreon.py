@@ -864,7 +864,8 @@ def import_campaign_page(url, key, import_id, contributor_id = None, allowed_to_
                     return_conn(conn)
 
                 delete_post_flags('patreon', user_id, post_id)
-
+                update_artist('patreon', user_id)
+                
                 if (config.ban_url):
                     requests.request('BAN', f"{config.ban_url}/{post_model['service']}/user/" + post_model['"user"'])
 
@@ -884,7 +885,7 @@ def import_campaign_page(url, key, import_id, contributor_id = None, allowed_to_
                 return
         else:
             delete_artist_cache_keys('patreon', user_id)
-            update_artist('patreon', user_id)
+            
             log(import_id, f"Finished scanning for posts.")
             return
 
