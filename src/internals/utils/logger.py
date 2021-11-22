@@ -3,7 +3,7 @@ from flask import current_app, session
 import datetime
 import logging
 
-from threading import Lock
+from multiprocessing import Lock
 from .utils import get_value
 from ..cache.redis import get_redis
 
