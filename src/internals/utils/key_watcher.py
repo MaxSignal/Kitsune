@@ -77,24 +77,24 @@ def watch(queue_limit=config.pubsub_queue_limit):
 
                         if service == 'patreon':
                             target = patreon.import_posts
-                            args = (service_key, allowed_to_scrape_dms, contributor_id, allowed_to_auto_import, None)
+                            args = (service_key, allowed_to_scrape_dms, contributor_id, allowed_to_auto_import, key_id)
                         elif service == 'fanbox':
                             target = fanbox.import_posts
-                            args = (service_key, contributor_id, allowed_to_auto_import, None)
+                            args = (service_key, contributor_id, allowed_to_auto_import, key_id)
                         elif service == 'subscribestar':
                             target = subscribestar.import_posts
-                            args = (service_key, contributor_id, allowed_to_auto_import, None)
+                            args = (service_key, contributor_id, allowed_to_auto_import, key_id)
                         elif service == 'gumroad':
                             target = gumroad.import_posts
-                            args = (service_key, contributor_id, allowed_to_auto_import, None)
+                            args = (service_key, contributor_id, allowed_to_auto_import, key_id)
                         elif service == 'fantia':
                             target = fantia.import_posts
-                            args = (service_key, contributor_id, allowed_to_auto_import, None)
+                            args = (service_key, contributor_id, allowed_to_auto_import, key_id)
                         elif service == 'discord':
                             target = discord.import_posts
                             if channel_ids is None:
                                 channel_ids = ''
-                            args = (service_key, channel_ids.strip().replace(" ", ""), contributor_id, allowed_to_auto_import, None)
+                            args = (service_key, channel_ids.strip().replace(" ", ""), contributor_id, allowed_to_auto_import, key_id)
                         else:
                             logger.log(import_id, f'Service "{service}" unsupported.')
                             delete_keys([key])
