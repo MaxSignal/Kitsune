@@ -4,7 +4,7 @@ import random
 import string
 import time
 import json
-from threading import Thread
+from multiprocessing import Process
 from src.internals.utils import logger
 from src.internals.utils.encryption import encrypt_and_log_session
 from src.lib.import_manager import import_posts
@@ -102,9 +102,9 @@ def watch(queue_limit=config.pubsub_queue_limit):
 
                         if target is not None and args is not None:
                             logger.log(import_id, f'Starting import. Your import id is {import_id}.')
-                            thread = Thread(target=import_posts, args=(import_id, target, args))
-                            thread.start()
-                            threads_to_run.append(thread)
+                            process = Process(target=import_posts, args=(import_id, target, args))
+                            process.start()
+                            threads_to_run.append(process)
                             redis.set(f"running_imports:{archiver_id}:{import_id}", '1')
                         else:
                             logger.log(import_id, f'Error starting import. Your import id is {import_id}.')
