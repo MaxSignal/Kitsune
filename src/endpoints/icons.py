@@ -34,13 +34,15 @@ class IconInformationEntry(TypedDict):
     # @RESPONSE: What do you mean in the last bit about kwargs with str.format()? Don't recall a clean way where that can be done.
     # @REVIEW: `str.format()` accepts kwargs as arguments
     # something like this: "example {key_var}".format(key_var="key_value")
+    # @RESPONSE: done
     data_url: str
     data_req_headers: dict
     data_type: ServiceDataType
     # @REVIEW: it isn't referred by this name in initializations
     # @RESPONSE: The `lambda` type doesn't exist...
     # @REVIEW: Not talking about the type, the inits assign the `icon_url` key
-    get_icon_url: Callable
+    # @RESPONSE: done
+    icon_url: Callable
 
 
 @icons.get('/icons/<service>/<user>')
@@ -62,35 +64,35 @@ def get_gumroad_icon_url(data):
 service_icon_information = {
     'patreon': IconInformationEntry(
         cloudflare=True,
-        data_url='https://api.patreon.com/user/{}',
+        data_url='https://api.patreon.com/user/{user_id}',
         data_req_headers={},
         data_type=ServiceDataType.JSON,
         icon_url=lambda data: data['included'][0]['attributes']['avatar_photo_url'] if data.get('included') else data['data']['attributes']['image_url']
     ),
     'fanbox': IconInformationEntry(
         cloudflare=False,
-        data_url='https://api.fanbox.cc/creator.get?userId={}',
+        data_url='https://api.fanbox.cc/creator.get?userId={user_id}',
         data_req_headers={},
         data_type=ServiceDataType.JSON,
         icon_url=lambda data: data['body']['user']['iconUrl']
     ),
     'subscribestar': IconInformationEntry(
         cloudflare=True,
-        data_url='https://subscribestar.adult/{}',
+        data_url='https://subscribestar.adult/{user_id}',
         data_req_headers={},
         data_type=ServiceDataType.HTML,
         icon_url=lambda data: BeautifulSoup(data, 'html.parser').find('div', class_='profile_main_info-userpic').contents[0]['src'],
     ),
     'gumroad': IconInformationEntry(
         cloudflare=True,
-        data_url='https://gumroad.com/{}',
+        data_url='https://gumroad.com/{user_id}',
         data_req_headers={},
         data_type=ServiceDataType.HTML,
         icon_url=get_gumroad_icon_url
     ),
     'fantia': IconInformationEntry(
         cloudflare=False,
-        data_url='https://fantia.jp/api/v1/fanclubs/{}',
+        data_url='https://fantia.jp/api/v1/fanclubs/{user_id}',
         data_req_headers={},
         data_type=ServiceDataType.JSON,
         icon_url=lambda data: data['fanclub']['icon']['main']
@@ -101,15 +103,17 @@ service_icon_information = {
 def download_icon(service, user):
     service_data = service_icon_information.get(service)
     # @REVIEW: that's not how `Path`s are initiated
-    service_icon_path: Path = join(icon_path, service)
+    # @RESPONSE: done
+    service_icon_path = Path(join(icon_path, service))
     try:
         if service_data and not exists(join(service_icon_path, user)):
             makedirs(service_icon_path, exist_ok=True)
-            scraper = create_scrapper_session(useCloudscraper=service_data['cloudflare']).get(service_data['data_url'].format(user), headers=service_data['data_req_headers'], proxies=get_proxy())
+            scraper = create_scrapper_session(useCloudscraper=service_data['cloudflare']).get(service_data['data_url'].format(user_id=user), headers=service_data['data_req_headers'], proxies=get_proxy())
             scraper.raise_for_status()
             data = scraper.json() if service_data['data_type'] == ServiceDataType.JSON else scraper.text
             # @REVIEW: the service path is still joined again
-            download_branding(join(config.download_path, 'icons', service), service_data['icon_url'](data), name=user)
+            # @RESPONSE: done
+            download_branding(service_icon_path, service_data['icon_url'](data), name=user)
     except Exception:
         logging.exception(f'Exception when downloading icon for user {user} on {service}')
         # create an empty file to prevent future requests for the same user if there is an issue.

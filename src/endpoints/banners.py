@@ -35,34 +35,35 @@ class BannerInformationEntry(TypedDict):
     # @REVIEW: it's not initialized by this name
     # @RESPONSE: see icons.pyL43
     # @REVIEW: see icons module
-    get_banner_url: Callable
+    # @RESPONSE: done
+    banner_url: Callable
 
 
 service_banner_information = {
     'patreon': BannerInformationEntry(
         cloudflare=True,
-        data_url='https://api.patreon.com/user/{}',
+        data_url='https://api.patreon.com/user/{user_id}',
         data_req_headers={},
         data_type=ServiceDataType.JSON,
         banner_url=lambda data: data['included'][0]['attributes']['cover_photo_url']
     ),
     'fanbox': BannerInformationEntry(
         cloudflare=False,
-        data_url='https://api.fanbox.cc/creator.get?userId={}',
+        data_url='https://api.fanbox.cc/creator.get?userId={user_id}',
         data_req_headers={},
         data_type=ServiceDataType.JSON,
         banner_url=lambda data: data['body']['coverImageUrl']
     ),
     'subscribestar': BannerInformationEntry(
         cloudflare=True,
-        data_url='https://subscribestar.adult/{}',
+        data_url='https://subscribestar.adult/{user_id}',
         data_req_headers={},
         data_type=ServiceDataType.HTML,
         banner_url=lambda data: BeautifulSoup(data, 'html.parser').find('img', class_='profile_main_info-cover')['src'],
     ),
     'fantia': BannerInformationEntry(
         cloudflare=False,
-        data_url='https://fantia.jp/api/v1/fanclubs/{}',
+        data_url='https://fantia.jp/api/v1/fanclubs/{user_id}',
         data_req_headers={},
         data_type=ServiceDataType.JSON,
         banner_url=lambda data: data['fanclub']['cover']['main']
@@ -74,13 +75,11 @@ def download_banner(service, user):
     service_data = service_banner_information.get(service)
     # @REVIEW: This isn't icons path and the same issue with `Path` init applies.
     # Fix your local setup, since that error should've prevented you from committing in the first place.
-    service_banners_path: Path = join(banners_path, service)
+    service_banners_path = Path(join(banners_path, service))
     try:
-        # @REVIEW: same issues as paths in `icons`` module
-        # @RESPONSE: icons.pyL
         if service_data and not exists(join(service_banners_path, user)):
             makedirs(service_banners_path, exist_ok=True)
-            scraper = create_scrapper_session(useCloudscraper=service_data['cloudflare']).get(service_data['data_url'].format(user), headers=service_data['data_req_headers'], proxies=get_proxy())
+            scraper = create_scrapper_session(useCloudscraper=service_data['cloudflare']).get(service_data['data_url'].format(user_id=user), headers=service_data['data_req_headers'], proxies=get_proxy())
             scraper.raise_for_status()
             data = scraper.json() if service_data['data_type'] == ServiceDataType.JSON else scraper.text
             download_branding(service_banners_path, service_data['banner_url'](data), name=user)
