@@ -57,7 +57,7 @@ def autoimport_api():
             'key': key['decrypted_key'],
             'key_id': key['id'],
             'service': key['service'],
-            'channel_ids': request.form.get("discord_channel_ids"),
+            'channel_ids': key['discord_channel_ids'],
             'auto_import': None,
             'save_session_key': None,
             'save_dms': None,
