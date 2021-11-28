@@ -15,6 +15,7 @@ from src.importers import subscribestar
 from src.importers import gumroad
 from src.importers import discord
 from src.importers import fantia
+from src.importers import onlyfans
 from setproctitle import setthreadtitle
 # a function that first runs existing import requests in a staggered manner (they may be incomplete as importers should delete their keys when they are done) then watches redis for new keys and handles queueing
 # needs to be run in a thread itself
@@ -89,6 +90,9 @@ def watch(queue_limit=config.pubsub_queue_limit):
                             args = (service_key, contributor_id, allowed_to_auto_import, key_id)
                         elif service == 'fantia':
                             target = fantia.import_posts
+                            args = (service_key, contributor_id, allowed_to_auto_import, key_id)
+                        elif service == 'onlyfans':
+                            target = onlyfans.import_posts
                             args = (service_key, contributor_id, allowed_to_auto_import, key_id)
                         elif service == 'discord':
                             target = discord.import_posts
