@@ -1,13 +1,15 @@
 import os
 import shutil
 import tempfile
+import json
 from os import makedirs
-
-from ..internals.cache.redis import delete_keys
-from ..internals.database.database import get_cursor, get_conn, return_conn, get_raw_conn
+from src.utils.utils import hash_dict
+from src.internals.cache.redis import delete_keys
+from src.internals.database.database import get_cursor, get_conn, return_conn, get_raw_conn
 from shutil import rmtree
 from os.path import join, exists
 import config
+
 
 def delete_post_cache_keys(service, artist_id, post_id):
     keys = [
@@ -16,10 +18,64 @@ def delete_post_cache_keys(service, artist_id, post_id):
 
     delete_keys(keys)
 
+
 def delete_all_post_cache_keys():
     keys = ['all_post_keys']
 
     delete_keys(keys)
+
+
+def handle_post_import(post_model: dict):
+    """
+    Handles revision backups before proceeding with overwrite.
+    """
+    service = post_model['service']
+    artist_id = post_model['"user"']
+    post_id = post_model['id']
+    existing_post = get_post(service, artist_id, post_id)
+    if existing_post and hash_dict(post_model) != hash_dict(existing_post):
+        # backup to `revisions`
+        write_post_to_db(existing_post, table='revisions')
+    write_post_to_db(post_model, table='posts')
+
+
+def write_post_to_db(post_model: dict, table='posts'):
+    post_model['embed'] = json.dumps(post_model['embed'])
+    post_model['file'] = json.dumps(post_model['file'])
+    for i in range(len(post_model['attachments'])):
+        post_model['attachments'][i] = json.dumps(post_model['attachments'][i])
+
+    columns = post_model.keys()
+    data = ['%s'] * len(post_model.values())
+    data[-1] = '%s::jsonb[]'  # attachments
+    query = """
+        INSERT INTO {table} ({fields}) VALUES ({values})
+        ON CONFLICT (id, service)
+        DO UPDATE SET {updates}
+    """.format(
+        table=table,
+        fields=','.join(columns),
+        values=','.join(data),
+        updates=','.join([f'{column}=EXCLUDED.{column}' for column in columns])
+    )
+    conn = get_raw_conn()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(query, list(post_model.values()))
+        conn.commit()
+    finally:
+        return_conn(conn)
+
+
+def get_post(service, artist_id, post_id):
+    conn = get_raw_conn()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id FROM posts WHERE id = %s AND \"user\" = %s AND service = %s", (post_id, artist_id, service,))
+    existing_post = cursor.fetchone()
+    cursor.close()
+    return_conn(conn)
+    return existing_post
+
 
 def post_exists(service, artist_id, post_id):
     conn = get_raw_conn()
@@ -30,6 +86,7 @@ def post_exists(service, artist_id, post_id):
     return_conn(conn)
     return len(existing_posts) > 0
 
+
 def get_comment_ids_for_user(service, user_id):
     conn = get_raw_conn()
     cursor = conn.cursor()
@@ -38,6 +95,7 @@ def get_comment_ids_for_user(service, user_id):
     cursor.close()
     return_conn(conn)
     return existing_comment_ids
+
 
 def get_comments_for_posts(service, post_id):
     conn = get_raw_conn()
@@ -48,6 +106,7 @@ def get_comments_for_posts(service, post_id):
     return_conn(conn)
     return existing_posts
 
+
 def comment_exists(service, commenter_id, comment_id):
     conn = get_raw_conn()
     cursor = conn.cursor()
@@ -56,6 +115,7 @@ def comment_exists(service, commenter_id, comment_id):
     cursor.close()
     return_conn(conn)
     return len(existing_posts) > 0
+
 
 def post_flagged(service, artist_id, post_id):
     conn = get_raw_conn()
@@ -66,6 +126,7 @@ def post_flagged(service, artist_id, post_id):
     return_conn(conn)
     return len(existing_flags) > 0
 
+
 def discord_post_exists(server_id, channel_id, post_id):
     conn = get_raw_conn()
     cursor = conn.cursor()
@@ -74,6 +135,7 @@ def discord_post_exists(server_id, channel_id, post_id):
     cursor.close()
     return_conn(conn)
     return len(existing_posts) > 0
+
 
 def delete_post_flags(service, artist_id, post_id):
     conn = get_raw_conn()
@@ -84,6 +146,7 @@ def delete_post_flags(service, artist_id, post_id):
         conn.commit()
     finally:
         return_conn(conn)
+
 
 def get_base_paths(service_name, user_id, post_id):
     if service_name == 'patreon':
