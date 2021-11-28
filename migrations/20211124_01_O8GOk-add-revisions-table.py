@@ -21,8 +21,7 @@ steps = [
             "published" timestamp,
             "edited" timestamp,
             "file" jsonb NOT NULL,
-            "attachments" jsonb[] NOT NULL,
-            UNIQUE (id, service)
+            "attachments" jsonb[] NOT NULL
         );
     """, 'DROP TABLE revisions')
 ]
