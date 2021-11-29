@@ -3,7 +3,7 @@ import shutil
 import tempfile
 import json
 from os import makedirs
-from src.utils.utils import hash_dict
+from src.utils.utils import hash_post
 from src.internals.cache.redis import delete_keys
 from src.internals.database.database import get_cursor, get_conn, return_conn, get_raw_conn
 from shutil import rmtree
@@ -33,7 +33,7 @@ def handle_post_import(post_model: dict):
     artist_id = post_model['"user"']
     post_id = post_model['id']
     existing_post = get_post(service, artist_id, post_id)
-    if existing_post and hash_dict(post_model) != hash_dict(existing_post):
+    if existing_post and hash_post(post_model) != hash_post(existing_post):
         # backup to `revisions`
         write_post_to_db(existing_post, table='revisions')
     write_post_to_db(post_model, table='posts')
