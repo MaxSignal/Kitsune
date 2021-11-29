@@ -48,7 +48,7 @@ def write_post_to_db(post_model: dict, table='posts'):
 
     columns = post_model.keys()
     data = ['%s'] * len(post_model.values())
-    data[columns.index('attachments')] = '%s::jsonb[]'  # attachments
+    data[list(columns).index('attachments')] = '%s::jsonb[]'  # attachments
     query = """
         INSERT INTO {table} ({fields}) VALUES ({values})
         ON CONFLICT (id, service)
