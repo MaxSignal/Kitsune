@@ -70,7 +70,7 @@ def write_post_to_db(post_model: dict, table='posts'):
 def get_post(service, artist_id, post_id):
     conn = get_raw_conn()
     cursor = conn.cursor()
-    cursor.execute("SELECT id FROM posts WHERE id = %s AND \"user\" = %s AND service = %s", (post_id, artist_id, service,))
+    cursor.execute("SELECT * FROM posts WHERE id = %s AND \"user\" = %s AND service = %s", (post_id, artist_id, service,))
     existing_post = cursor.fetchone()
     cursor.close()
     return_conn(conn)
