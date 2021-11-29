@@ -35,7 +35,8 @@ def handle_post_import(post_model: dict):
     existing_post = get_post(service, artist_id, post_id)
     if existing_post and hash_post(post_model) != hash_post(existing_post):
         # backup to `revisions`
-        existing_post['"user"'] = existing_post.pop('user')
+        existing_post.pop('user', None)
+        existing_post['"user"'] = artist_id
         write_post_to_db(existing_post, table='revisions')
     write_post_to_db(post_model, table='posts')
 
@@ -49,16 +50,17 @@ def write_post_to_db(post_model: dict, table='posts'):
     columns = post_model.keys()
     data = ['%s'] * len(post_model.values())
     data[list(columns).index('attachments')] = '%s::jsonb[]'  # attachments
-    query = """
-        INSERT INTO {table} ({fields}) VALUES ({values})
-        ON CONFLICT (id, service)
-        DO UPDATE SET {updates}
-    """.format(
+    query = "INSERT INTO {table} ({fields}) VALUES ({values})".format(
         table=table,
         fields=','.join(columns),
-        values=','.join(data),
-        updates=','.join([f'{column}=EXCLUDED.{column}' for column in columns])
+        values=','.join(data)
     )
+    if table == 'posts':
+        query += """
+            ON CONFLICT (id, service)
+            DO UPDATE SET {updates}
+        """.format(updates=','.join([f'{column}=EXCLUDED.{column}' for column in columns]))
+
     conn = get_raw_conn()
     try:
         cursor = conn.cursor()
