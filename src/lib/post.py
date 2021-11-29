@@ -33,9 +33,9 @@ def handle_post_import(post_model: dict):
     artist_id = post_model['"user"']
     post_id = post_model['id']
     existing_post = get_post(service, artist_id, post_id)
-    existing_post['"user"'] = existing_post.pop('user')
     if existing_post and hash_post(post_model) != hash_post(existing_post):
         # backup to `revisions`
+        existing_post['"user"'] = existing_post.pop('user')
         write_post_to_db(existing_post, table='revisions')
     write_post_to_db(post_model, table='posts')
 
