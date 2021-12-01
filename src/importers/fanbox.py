@@ -1,24 +1,49 @@
-from ..internals.utils.scrapper import create_scrapper_session
-from ..internals.utils.logger import log
-from ..internals.utils.utils import get_import_id
-from ..internals.utils.download import download_file, DownloaderException
-from ..internals.utils.proxy import get_proxy
-from ..lib.autoimport import encrypt_and_save_session_for_auto_import, kill_key
-from ..lib.post import post_flagged, post_exists, delete_post_flags, move_to_backup, delete_backup, restore_from_backup, comment_exists, get_comments_for_posts, get_comment_ids_for_user, handle_post_import
-from ..lib.artist import index_artists, is_artist_dnp, update_artist, delete_artist_cache_keys, delete_comment_cache_keys, get_all_artist_post_ids, get_all_artist_flagged_post_ids, get_all_dnp
-from ..internals.database.database import get_conn, get_raw_conn, return_conn
-from ..internals.cache.redis import delete_keys
+import datetime
+import json
+import sys
+from os import makedirs
+from os.path import join
+
+import dateutil
+import requests
 from flask import current_app
 from setproctitle import setthreadtitle
-import json
-import config
-import dateutil
-import datetime
-import requests
-from os.path import join
-from os import makedirs
+from configs.env_vars import ENV_VARS
+from src.internals.utils.download import DownloaderException, download_file
+from src.internals.utils.logger import log
+from src.internals.utils.proxy import get_proxy
+from src.internals.utils.scrapper import create_scrapper_session
+from src.internals.utils.utils import get_import_id
 
-import sys
+from src.internals.cache.redis import delete_keys
+from src.internals.database.database import get_conn, get_raw_conn, return_conn
+from src.lib.artist import (
+    delete_artist_cache_keys,
+    delete_comment_cache_keys,
+    get_all_artist_flagged_post_ids,
+    get_all_artist_post_ids,
+    get_all_dnp,
+    index_artists,
+    is_artist_dnp,
+    update_artist
+)
+from src.lib.autoimport import (
+    encrypt_and_save_session_for_auto_import,
+    kill_key
+)
+from src.lib.post import (
+    comment_exists,
+    delete_backup,
+    delete_post_flags,
+    get_comment_ids_for_user,
+    get_comments_for_posts,
+    handle_post_import,
+    move_to_backup,
+    post_exists,
+    post_flagged,
+    restore_from_backup
+)
+
 sys.path.append('./PixivUtil2')
 from PixivUtil2.PixivModelFanbox import FanboxArtist, FanboxPost  # noqa: E402
 
@@ -58,8 +83,8 @@ def import_comment(comment, user_id, post_id, import_id):
         for comment in comment['replies']:
             import_comment(comment, user_id, post_id, import_id)
 
-    if (config.ban_url):
-        requests.request('BAN', f"{config.ban_url}/{post_model['service']}/user/" + user_id + '/post/' + post_model['post_id'])
+    if (ENV_VARS.BAN_URL):
+        requests.request('BAN', f"{ENV_VARS.BAN_URL}/{post_model['service']}/user/" + user_id + '/post/' + post_model['post_id'])
     delete_comment_cache_keys(post_model['service'], user_id, post_model['post_id'])
 
 
@@ -366,8 +391,8 @@ def import_posts_via_id(import_id, key, campaign_id, contributor_id=None, allowe
                     handle_post_import(post_model)
                     delete_post_flags('fanbox', user_id, post_id)
 
-                    if (config.ban_url):
-                        requests.request('BAN', f"{config.ban_url}/{post_model['service']}/user/" + post_model['"user"'])
+                    if (ENV_VARS.BAN_URL):
+                        requests.request('BAN', f"{ENV_VARS.BAN_URL}/{post_model['service']}/user/" + post_model['"user"'])
 
                     log(import_id, f'Finished importing {post_id} for user {user_id}', to_client=False)
                     wasCampaignUpdated = True

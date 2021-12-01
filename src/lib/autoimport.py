@@ -1,14 +1,24 @@
-from Crypto.PublicKey import RSA
-from Crypto.Cipher import PKCS1_OAEP, AES
-from Crypto.Random import get_random_bytes
-from ..internals.cache.redis import delete_keys, delete_keys_pattern
-from ..internals.database.database import get_raw_conn, return_conn, get_cursor
-from ..internals.utils.logger import log
-from base64 import b64decode,b64encode
 import hashlib
-import config
+from base64 import b64decode, b64encode
+
+from Crypto.Cipher import AES, PKCS1_OAEP
+from Crypto.PublicKey import RSA
+from Crypto.Random import get_random_bytes
 from joblib import Parallel, delayed
-from ..internals.cache.redis import get_redis
+from src.internals.utils.logger import log
+
+from configs.env_vars import ENV_VARS
+from src.internals.cache.redis import (
+    delete_keys,
+    delete_keys_pattern,
+    get_redis
+)
+from src.internals.database.database import (
+    get_cursor,
+    get_raw_conn,
+    return_conn
+)
+
 
 def log_import_id(key_id, import_id):
     conn = get_raw_conn()
@@ -16,6 +26,7 @@ def log_import_id(key_id, import_id):
     cursor.execute("INSERT INTO saved_session_key_import_ids (key_id, import_id) VALUES (%s, %s) ON CONFLICT DO NOTHING", (int(key_id), import_id))
     conn.commit()
     return_conn(conn)
+
 
 def revoke_v1_key(key_id):
     # mark as dead (should happen when a key is detected as unusable due to expiration/invalidation)
@@ -25,6 +36,7 @@ def revoke_v1_key(key_id):
     conn.commit()
     return_conn(conn)
 
+
 def kill_key(key_id):
     # mark as dead (should happen when a key is detected as unusable due to expiration/invalidation)
     conn = get_raw_conn()
@@ -32,6 +44,7 @@ def kill_key(key_id):
     cursor.execute("UPDATE saved_session_keys_with_hashes SET dead = TRUE WHERE id = %s", (int(key_id),))
     conn.commit()
     return_conn(conn)
+
 
 def decrypt_key(key, rsa_key):
     key_to_decrypt = key
@@ -55,11 +68,11 @@ def decrypt_key(key, rsa_key):
         return None
     return (key_to_decrypt)
 
-def decrypt_all_good_keys(privatekey, v1 = False):
-    redis = get_redis()
+
+def decrypt_all_good_keys(privatekey, v1=False):
 
     key_table = 'saved_session_keys' if v1 else 'saved_session_keys_with_hashes'
-    
+
     conn = get_raw_conn()
     cursor = conn.cursor()
     cursor.execute(f"SELECT * FROM {key_table} WHERE dead = FALSE")
@@ -71,10 +84,10 @@ def decrypt_all_good_keys(privatekey, v1 = False):
             decrypted_keys.append(key)
     return decrypted_keys
 
-def encrypt_and_save_session_for_auto_import(service, key, contributor_id = None, discord_channel_ids = None):
-    redis = get_redis()
 
-    rsa_key_der = b64decode(config.pubkey.strip())
+def encrypt_and_save_session_for_auto_import(service, key, contributor_id=None, discord_channel_ids=None):
+
+    rsa_key_der = b64decode(ENV_VARS.PUBKEY.strip())
     rsa_key_pub = RSA.importKey(rsa_key_der)
     rsa_cipher = PKCS1_OAEP.new(rsa_key_pub)
 
@@ -95,11 +108,11 @@ def encrypt_and_save_session_for_auto_import(service, key, contributor_id = None
         'discord_channel_ids': discord_channel_ids,
         'encrypted_key': key_cryptstuff,
         'contributor_id': int(contributor_id) if contributor_id else None,
-        'hash': hashlib.sha256((key + config.salt).encode('utf-8')).hexdigest()
+        'hash': hashlib.sha256((key + ENV_VARS.SALT).encode('utf-8')).hexdigest()
     }
     query = "INSERT INTO saved_session_keys_with_hashes ({fields}) VALUES ({values}) ON CONFLICT DO NOTHING".format(
-        fields = ','.join(model.keys()),
-        values = ','.join(['%s'] * len(model.values()))
+        fields=','.join(model.keys()),
+        values=','.join(['%s'] * len(model.values()))
     )
     cursor.execute(query, list(model.values()))
     conn.commit()

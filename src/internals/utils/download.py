@@ -1,37 +1,41 @@
-import mimetypes
-import requests
-import uuid
 import cgi
+import datetime
+import functools
+import mimetypes
+import pathlib
 import re
 import shutil
-import functools
-import urllib
-import config
 import tempfile
-import os
+import urllib
+import uuid
+from os import makedirs, remove, rename
+from os.path import basename, dirname, exists, getsize, join, splitext
+
 import magic
-import re
-import pathlib
-import datetime
+import requests
 from PIL import Image
-from os import rename, makedirs, remove
-from os.path import join, getsize, exists, splitext, basename, dirname
+
+from configs.env_vars import CONSTANTS
+from src.lib.files import write_file_log
+
 from .proxy import get_proxy
 from .utils import get_hash_of_file
-from ...lib.files import write_file_log
 
 non_url_safe = ['"', '#', '$', '%', '&', '+',
-    ',', '/', ':', ';', '=', '?',
-    '@', '[', '\\', ']', '^', '`',
-    '{', '|', '}', '~', "'"]
+                ',', '/', ':', ';', '=', '?',
+                '@', '[', '\\', ']', '^', '`',
+                '{', '|', '}', '~', "'"]
+
 
 class DuplicateException(Exception):
     pass
 
+
 class DownloaderException(Exception):
     pass
 
-def uniquify(path):
+
+def uniquify(path: str):
     filename, extension = splitext(path)
     counter = 1
 
@@ -40,6 +44,7 @@ def uniquify(path):
         counter += 1
 
     return basename(path)
+
 
 def get_filename_from_cd(cd):
     if not cd:
@@ -57,6 +62,7 @@ def get_filename_from_cd(cd):
     # clean space and double quotes
     return fname.strip().strip('"')
 
+
 def slugify(text):
     """
     Turn the text content of a header into a slug for use in an ID
@@ -69,13 +75,14 @@ def slugify(text):
     text = u'_'.join(text.split())
     return text
 
-def download_branding(ddir, url, name = None, **kwargs):
+
+def download_branding(ddir, url, name=None, **kwargs):
     temp_name = str(uuid.uuid4()) + '.temp'
     tries = 10
     makedirs(ddir, exist_ok=True)
     for i in range(tries):
         try:
-            r = requests.get(url, stream = True, proxies=get_proxy(), **kwargs)
+            r = requests.get(url, stream=True, proxies=get_proxy(), **kwargs)
             r.raw.read = functools.partial(r.raw.read, decode_content=True)
             r.raise_for_status()
             # Should retry on connection error
@@ -99,18 +106,19 @@ def download_branding(ddir, url, name = None, **kwargs):
 
                 file.close()
                 rename(join(ddir, temp_name), join(ddir, filename))
-                
+
                 make_thumbnail(join(ddir, filename))
 
                 return filename, r
         except requests.HTTPError as e:
             raise e
         except:
-            if i < tries - 1: # i is zero indexed
+            if i < tries - 1:  # i is zero indexed
                 continue
             else:
                 raise
         break
+
 
 def download_file(
     url: str,
@@ -125,13 +133,14 @@ def download_file(
     discord_message_id: str = '',
     **kwargs
 ):
-    makedirs(join(config.download_path, 'data', 'tmp'), exist_ok=True)
-    temp_dir = tempfile.mkdtemp(dir=join(config.download_path, 'data', 'tmp'))
+    makedirs(CONSTANTS.TEMP_DIR_ROOT, exist_ok=True)
+
+    temp_dir = tempfile.mkdtemp(dir=CONSTANTS.TEMP_DIR_ROOT)
     temp_name = str(uuid.uuid4()) + '.temp'
     tries = 10
     for i in range(tries):
         try:
-            r = requests.get(url, stream = True, proxies=get_proxy(), **kwargs)
+            r = requests.get(url, stream=True, proxies=get_proxy(), **kwargs)
             r.raw.read = functools.partial(r.raw.read, decode_content=True)
             r.raise_for_status()
             # Should retry on connection error
@@ -142,7 +151,7 @@ def download_file(
                 mime = magic.from_file(join(temp_dir, temp_name), mime=True)
                 extension = re.sub('^.jpe$', '.jpg', mimetypes.guess_extension(mime or reported_mime or 'application/octet-stream', strict=False) or '.bin')
                 reported_filename = name or r.headers.get('x-amz-meta-original-filename') or get_filename_from_cd(r.headers.get('content-disposition')) or (str(uuid.uuid4()) + extension)
-                
+
                 # content integrity
                 if r.headers.get('content-length') and r.raw.tell() < int(r.headers.get('content-length')):
                     reported_size = r.raw.tell()
@@ -175,32 +184,33 @@ def download_file(
                     discord_message_id=discord_message_id
                 )
 
-                if (exists(join(config.download_path, 'data', hash_filename))):
+                if (exists(join(CONSTANTS.DATA_FOLDER, hash_filename))):
                     shutil.rmtree(temp_dir, ignore_errors=True)
-                    return reported_filename, '/' + hash_filename, r
-                
+                    return (reported_filename, '/' + hash_filename, r)
+
                 file.close()
-                
-                makedirs(join(config.download_path, 'data', file_hash[0:2], file_hash[2:4]), exist_ok=True)
-                rename(join(temp_dir, temp_name), join(config.download_path, 'data', hash_filename))
+
+                makedirs(join(CONSTANTS.DATA_FOLDER, file_hash[0:2], file_hash[2:4]), exist_ok=True)
+                rename(join(temp_dir, temp_name), join(CONSTANTS.DATA_FOLDER, hash_filename))
                 shutil.rmtree(temp_dir, ignore_errors=True)
-                make_thumbnail(join(config.download_path, 'data', hash_filename))
-                return reported_filename, '/' + hash_filename, r
+                make_thumbnail(join(CONSTANTS.DATA_FOLDER, hash_filename))
+                return (reported_filename, '/' + hash_filename, r)
         except requests.HTTPError as e:
             raise e
         except:
-            if i < tries - 1: # i is zero indexed
+            if i < tries - 1:  # i is zero indexed
                 continue
             else:
                 raise
         break
 
-def make_thumbnail(path):
+
+def make_thumbnail(path: str):
     try:
         image = Image.open(path)
         image = image.convert('RGB')
         image.thumbnail((800, 800))
-        makedirs(dirname(join(config.download_path, 'thumbnail' + path.replace(config.download_path, ''))), exist_ok=True)
-        image.save(join(config.download_path, 'thumbnail' + path.replace(config.download_path, '')), 'JPEG', quality=60)
+        makedirs(dirname(join(CONSTANTS.DOWNLOAD_PATH, 'thumbnail' + path.replace(CONSTANTS.DOWNLOAD_PATH, ''))), exist_ok=True)
+        image.save(join(CONSTANTS.DOWNLOAD_PATH, 'thumbnail' + path.replace(CONSTANTS.DOWNLOAD_PATH, '')), 'JPEG', quality=60)
     except:
         pass

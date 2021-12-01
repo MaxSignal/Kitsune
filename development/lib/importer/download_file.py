@@ -1,5 +1,4 @@
 import os
-import config
 import tempfile
 import uuid
 import shutil
@@ -9,13 +8,14 @@ import mimetypes
 from pathlib import Path
 from datetime import datetime
 
+from configs.env_vars import CONSTANTS
 from src.internals.utils.utils import get_hash_of_file
 from src.internals.utils.download import make_thumbnail
 from src.lib.files import write_file_log
 from development.types.models import File
 
-data_folder = os.path.join(config.download_path, 'data')
-temp_dir_root = os.path.join(data_folder, 'tmp')
+data_folder = str(CONSTANTS.DATA_FOLDER)
+temp_dir_root = str(CONSTANTS.TEMP_DIR_ROOT)
 
 
 def download_file(

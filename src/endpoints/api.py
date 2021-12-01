@@ -1,26 +1,33 @@
-from flask import Blueprint, request
 import json
 import os
-import config
 import threading
 
-from ..internals.cache.redis import get_redis
-from ..internals.utils import thread_master
-from ..internals.utils.flask_thread import FlaskThread
-from ..internals.utils.utils import get_import_id
-from ..internals.utils.encryption import encrypt_and_log_session
-from ..internals.utils import logger
-from ..lib.import_manager import import_posts
-from ..lib.autoimport import decrypt_all_good_keys, log_import_id, revoke_v1_key, encrypt_and_save_session_for_auto_import
-from ..internals.utils.download import uniquify
+from flask import Blueprint, request
+from src.importers import (
+    discord,
+    fanbox,
+    fantia,
+    gumroad,
+    patreon,
+    subscribestar
+)
+from src.internals.utils import logger, thread_master
+from src.internals.utils.download import uniquify
+from src.internals.utils.encryption import encrypt_and_log_session
+from src.internals.utils.flask_thread import FlaskThread
+from src.internals.utils.utils import get_import_id
 from werkzeug.utils import secure_filename
 
-from ..importers import patreon
-from ..importers import fanbox
-from ..importers import subscribestar
-from ..importers import gumroad
-from ..importers import discord
-from ..importers import fantia
+from configs.env_vars import CONSTANTS
+from src.internals.cache.redis import get_redis
+from src.lib.autoimport import (
+    decrypt_all_good_keys,
+    encrypt_and_save_session_for_auto_import,
+    log_import_id,
+    revoke_v1_key
+)
+from src.lib.import_manager import import_posts
+
 api = Blueprint('api', __name__)
 
 
@@ -126,9 +133,9 @@ def upload_file(path):
     if 'file' not in request.files:
         return 'No file', 400
     uploaded_file = request.files['file']
-    os.makedirs(os.path.join(config.download_path, path), exist_ok=True)
-    filename = uniquify(os.path.join(config.download_path, path, secure_filename(uploaded_file.filename)))
-    uploaded_file.save(os.path.join(config.download_path, path, filename))
+    os.makedirs(os.path.join(CONSTANTS.DOWNLOAD_PATH, path), exist_ok=True)
+    filename = uniquify(os.path.join(CONSTANTS.DOWNLOAD_PATH, path, secure_filename(uploaded_file.filename)))
+    uploaded_file.save(os.path.join(CONSTANTS.DOWNLOAD_PATH, path, filename))
     return os.path.join('/', path, filename), 200
 
 

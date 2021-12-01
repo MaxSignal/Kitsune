@@ -1,13 +1,17 @@
-from bs4 import BeautifulSoup
+import logging
+
 import cloudscraper
 import requests
-import logging
-import config
+from bs4 import BeautifulSoup
+from src.internals.utils.proxy import get_proxy
 
-from configs.derived_vars import is_development
-from ..internals.utils.proxy import get_proxy
-from ..internals.cache.redis import delete_keys, delete_keys_pattern
-from ..internals.database.database import get_raw_conn, return_conn, get_cursor
+from configs.env_vars import DERIVED_VARS, ENV_VARS
+from src.internals.cache.redis import delete_keys, delete_keys_pattern
+from src.internals.database.database import (
+    get_cursor,
+    get_raw_conn,
+    return_conn
+)
 
 
 def delete_dm_cache_keys(service, artist_id):
@@ -177,7 +181,7 @@ def index_artists():
                     "name": soup.find('strong', class_='prof_maker_name').string,
                     "service": "dlsite"
                 }
-            elif is_development:
+            elif DERIVED_VARS.IS_DEVELOPMENT:
                 from development import service_name
 
                 # if post["service"] == service_name:
@@ -190,8 +194,8 @@ def index_artists():
             if model:
                 write_model_to_db(conn, cursor, model)
 
-                if (config.ban_url):
-                    requests.request('BAN', f"{config.ban_url}/{post['service']}/user/" + post['user'])
+                if (ENV_VARS.BAN_URL):
+                    requests.request('BAN', f"{ENV_VARS.BAN_URL}/{post['service']}/user/" + post['user'])
                 delete_artist_cache_keys(post['service'], post['user'])
         except Exception:
             logging.exception(f"Error while indexing user {post['user']}")

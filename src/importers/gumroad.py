@@ -1,25 +1,47 @@
-from ..internals.utils.scrapper import create_scrapper_session
-from ..internals.utils.utils import get_value
-from ..internals.utils.logger import log
-from ..internals.utils.proxy import get_proxy
-from ..internals.utils.download import download_file, DownloaderException
-from ..internals.cache.redis import delete_keys
-from ..lib.autoimport import encrypt_and_save_session_for_auto_import, kill_key
-from ..lib.post import post_flagged, post_exists, delete_post_flags, move_to_backup, delete_backup, restore_from_backup, handle_post_import
-from ..lib.artist import index_artists, is_artist_dnp, update_artist, delete_artist_cache_keys, get_all_artist_post_ids, get_all_artist_flagged_post_ids, get_all_dnp
-from ..internals.database.database import get_conn, get_raw_conn, return_conn
-from setproctitle import setthreadtitle
-from flask import current_app
-from os import makedirs
-from os.path import join
-from bs4 import BeautifulSoup
 import datetime
 import json
-import uuid
-import requests
-import config
 import re
 import sys
+import uuid
+from os import makedirs
+from os.path import join
+
+import requests
+from bs4 import BeautifulSoup
+from flask import current_app
+from setproctitle import setthreadtitle
+from configs.env_vars import ENV_VARS
+from src.internals.utils.download import DownloaderException, download_file
+from src.internals.utils.logger import log
+from src.internals.utils.proxy import get_proxy
+from src.internals.utils.scrapper import create_scrapper_session
+from src.internals.utils.utils import get_value
+
+from src.internals.cache.redis import delete_keys
+from src.internals.database.database import get_conn, get_raw_conn, return_conn
+from src.lib.artist import (
+    delete_artist_cache_keys,
+    get_all_artist_flagged_post_ids,
+    get_all_artist_post_ids,
+    get_all_dnp,
+    index_artists,
+    is_artist_dnp,
+    update_artist
+)
+from src.lib.autoimport import (
+    encrypt_and_save_session_for_auto_import,
+    kill_key
+)
+from src.lib.post import (
+    delete_backup,
+    delete_post_flags,
+    handle_post_import,
+    move_to_backup,
+    post_exists,
+    post_flagged,
+    restore_from_backup
+)
+
 sys.setrecursionlimit(100000)
 
 
@@ -168,8 +190,8 @@ def import_posts(import_id, key, contributor_id=None, allowed_to_auto_import=Non
             update_artist('gumroad', user_id)
             delete_post_flags('gumroad', user_id, post_id)
 
-            if (config.ban_url):
-                requests.request('BAN', f"{config.ban_url}/{post_model['service']}/user/" + post_model['"user"'])
+            if (ENV_VARS.BAN_URL):
+                requests.request('BAN', f"{ENV_VARS.BAN_URL}/{post_model['service']}/user/" + post_model['"user"'])
             delete_artist_cache_keys('gumroad', user_id)
 
             log(import_id, f"Finished importing post {post_id} from user {user_id}", to_client=False)

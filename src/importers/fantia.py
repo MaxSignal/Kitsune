@@ -1,21 +1,43 @@
-from ..internals.utils.proxy import get_proxy
-from ..internals.utils.scrapper import create_scrapper_session
-from ..internals.utils.download import download_file, DownloaderException
-from ..lib.autoimport import encrypt_and_save_session_for_auto_import, kill_key
-from ..lib.post import post_flagged, post_exists, delete_post_flags, move_to_backup, delete_backup, restore_from_backup, handle_post_import
-from ..lib.artist import index_artists, is_artist_dnp, update_artist, delete_artist_cache_keys, get_all_artist_post_ids, get_all_artist_flagged_post_ids, get_all_dnp
-from ..internals.utils.logger import log
-from ..internals.database.database import get_conn, get_raw_conn, return_conn
-from ..internals.cache.redis import delete_keys
-from setproctitle import setthreadtitle
-from bs4 import BeautifulSoup
-from os.path import join
-from urllib.parse import urljoin
 import datetime
 import json
-import config
-import requests
 import sys
+from os.path import join
+from urllib.parse import urljoin
+
+import requests
+from bs4 import BeautifulSoup
+from setproctitle import setthreadtitle
+from configs.env_vars import ENV_VARS
+from src.internals.utils.download import DownloaderException, download_file
+from src.internals.utils.logger import log
+from src.internals.utils.proxy import get_proxy
+from src.internals.utils.scrapper import create_scrapper_session
+
+from src.internals.cache.redis import delete_keys
+from src.internals.database.database import get_conn, get_raw_conn, return_conn
+from src.lib.artist import (
+    delete_artist_cache_keys,
+    get_all_artist_flagged_post_ids,
+    get_all_artist_post_ids,
+    get_all_dnp,
+    index_artists,
+    is_artist_dnp,
+    update_artist
+)
+from src.lib.autoimport import (
+    encrypt_and_save_session_for_auto_import,
+    kill_key
+)
+from src.lib.post import (
+    delete_backup,
+    delete_post_flags,
+    handle_post_import,
+    move_to_backup,
+    post_exists,
+    post_flagged,
+    restore_from_backup
+)
+
 sys.setrecursionlimit(100000)
 
 
@@ -220,8 +242,8 @@ def import_fanclub(fanclub_id, import_id, jar, page=1):  # noqa: C901
                 handle_post_import(post_model)
                 delete_post_flags('fantia', user_id, post_id)
 
-                if (config.ban_url):
-                    requests.request('BAN', f"{config.ban_url}/{post_model['service']}/user/" + post_model['"user"'])
+                if (ENV_VARS.BAN_URL):
+                    requests.request('BAN', f"{ENV_VARS.BAN_URL}/{post_model['service']}/user/" + post_model['"user"'])
 
                 log(import_id, f"Finished importing {post_id} from user {user_id}", to_client=False)
                 wasFanclubUpdated = True

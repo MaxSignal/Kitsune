@@ -1,28 +1,43 @@
-import config
-import redis
+import json
 import random
 import string
 import time
-import json
 from threading import Thread
+
+from setproctitle import setthreadtitle
+from configs.env_vars import ENV_VARS
+from src.importers import (
+    discord,
+    fanbox,
+    fantia,
+    gumroad,
+    patreon,
+    subscribestar
+)
 from src.internals.utils import logger
 from src.internals.utils.encryption import encrypt_and_log_session
+
 from src.lib.import_manager import import_posts
-from ..cache.redis import get_redis, delete_keys, delete_keys_pattern, scan_keys
-from src.importers import patreon
-from src.importers import fanbox
-from src.importers import subscribestar
-from src.importers import gumroad
-from src.importers import discord
-from src.importers import fantia
-from setproctitle import setthreadtitle
-# a function that first runs existing import requests in a staggered manner (they may be incomplete as importers should delete their keys when they are done) then watches redis for new keys and handles queueing
-# needs to be run in a thread itself
-# remember to clear logs after successful import
-def watch(queue_limit=config.pubsub_queue_limit):
+
+from src.internals.cache.redis import (
+    delete_keys,
+    delete_keys_pattern,
+    get_redis,
+    scan_keys
+)
+
+
+def watch(queue_limit=int(ENV_VARS.PUBSUB_QUEUE_LIMIT)):  # noqa C901
+    """
+    A function that first runs existing import requests in a staggered manner
+    (they may be incomplete as importers should delete their keys when they are done)
+    then watches redis for new keys and handles queueing.
+    Needs to be run in a thread itself.
+    Remember to clear logs after successful import.
+    """
     archiver_id = ''.join(random.choice(string.ascii_letters + string.digits) for x in range(16))
-    delete_keys_pattern([f"running_imports:*"])
-    setthreadtitle(f'KWATCHER')
+    delete_keys_pattern(["running_imports:*"])
+    setthreadtitle('KWATCHER')
     print(f'Key watcher ({archiver_id}) is starting!')
 
     redis = get_redis()
@@ -31,7 +46,7 @@ def watch(queue_limit=config.pubsub_queue_limit):
         for thread in threads_to_run:
             if not thread.is_alive():
                 threads_to_run.remove(thread)
-        
+
         for key in scan_keys('imports:*'):
             key_data = redis.get(key)
             if key_data:
@@ -42,7 +57,7 @@ def watch(queue_limit=config.pubsub_queue_limit):
                     print(f'An decoding error occured while processing import request {key.decode("utf-8")}; are you sending malformed JSON?')
                     delete_keys([key])
                     continue
-                
+
                 if redis.get(f"running_imports:{archiver_id}:{import_id}"):
                     continue
 
@@ -111,5 +126,5 @@ def watch(queue_limit=config.pubsub_queue_limit):
                     except KeyError:
                         logger.log(import_id, 'Exception occured while starting import due to missing data in payload.', 'exception', to_client=True)
                         delete_keys([key])
-        
+
         time.sleep(1)

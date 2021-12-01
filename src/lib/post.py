@@ -1,14 +1,20 @@
+import json
 import os
 import shutil
 import tempfile
-import json
 from os import makedirs
-from src.utils.utils import hash_post
-from src.internals.cache.redis import delete_keys
-from src.internals.database.database import get_cursor, get_conn, return_conn, get_raw_conn
+from os.path import exists, join
 from shutil import rmtree
-from os.path import join, exists
-import config
+
+from configs.env_vars import CONSTANTS
+from src.internals.cache.redis import delete_keys
+from src.internals.database.database import (
+    get_conn,
+    get_cursor,
+    get_raw_conn,
+    return_conn
+)
+from src.utils.utils import hash_post
 
 
 def delete_post_cache_keys(service, artist_id, post_id):
@@ -169,10 +175,10 @@ def get_base_paths(service_name, user_id, post_id):
 def move_to_backup(service_name, user_id, post_id):
     base_paths = get_base_paths(service_name, user_id, post_id)
     backup_path = tempfile.mkdtemp()
-    if exists(join(config.download_path, base_paths['file'])):
-        shutil.move(join(config.download_path, base_paths['file']), join(backup_path, 'file'))
-    if exists(join(config.download_path, base_paths['attachments'])):
-        shutil.move(join(config.download_path, base_paths['attachments']), join(backup_path, 'attachments'))
+    if exists(join(CONSTANTS.DOWNLOAD_PATH, base_paths['file'])):
+        shutil.move(join(CONSTANTS.DOWNLOAD_PATH, base_paths['file']), join(backup_path, 'file'))
+    if exists(join(CONSTANTS.DOWNLOAD_PATH, base_paths['attachments'])):
+        shutil.move(join(CONSTANTS.DOWNLOAD_PATH, base_paths['attachments']), join(backup_path, 'attachments'))
     return backup_path
 
 
@@ -182,9 +188,9 @@ def delete_backup(backup_path):
 
 def restore_from_backup(service_name, user_id, post_id, backup_path):
     base_paths = get_base_paths(service_name, user_id, post_id)
-    shutil.rmtree(join(config.download_path, base_paths['file']), ignore_errors=True)
+    shutil.rmtree(join(CONSTANTS.DOWNLOAD_PATH, base_paths['file']), ignore_errors=True)
     if exists(join(backup_path, 'file')):
-        os.rename(join(backup_path, 'file'), join(config.download_path, base_paths['file']))
-    shutil.rmtree(join(config.download_path, base_paths['attachments']), ignore_errors=True)
+        os.rename(join(backup_path, 'file'), join(CONSTANTS.DOWNLOAD_PATH, base_paths['file']))
+    shutil.rmtree(join(CONSTANTS.DOWNLOAD_PATH, base_paths['attachments']), ignore_errors=True)
     if exists(join(backup_path, 'attachments')):
-        os.rename(join(backup_path, 'attachments'), join(config.download_path, base_paths['attachments']))
+        os.rename(join(backup_path, 'attachments'), join(CONSTANTS.DOWNLOAD_PATH, base_paths['attachments']))
