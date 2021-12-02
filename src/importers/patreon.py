@@ -484,6 +484,21 @@ def get_dm_campaigns(key, current_user_id, import_id):
     return set(campaign['relationships']['campaign']['data']['id'] for campaign in campaigns_data['data'])
 
 
+def get_current_user_campaign(key, import_id):
+    try:
+        scraper = create_scrapper_session().get(current_user_url, cookies={'session_id': key}, proxies=get_proxy())
+        scraper_data = scraper.json()
+        scraper.raise_for_status()
+    except requests.HTTPError as e:
+        log(import_id, f"Status code {e.response.status_code} when contacting Patreon current user API.", 'exception')
+        raise
+    except Exception:
+        log(import_id, 'Error connecting to cloudscraper. Please try again.', 'exception')
+        raise
+
+    return scraper_data['data']['relationships']['campaign']['data']['id'] if scraper_data['data']['relationships']['campaign']['data'] else None
+
+
 def get_current_user_id(key, import_id):
     try:
         scraper = create_scrapper_session().get(current_user_url, cookies={'session_id': key}, proxies=get_proxy())
@@ -889,6 +904,9 @@ def import_posts(import_id, key, allowed_to_scrape_dms, contributor_id, allowed_
         import_dms(key, import_id, contributor_id)
         log(import_id, "Done importing DMs.", to_client=True)
     campaign_ids = get_campaign_ids(key, import_id)
+    current_user_campaign_id = get_current_user_campaign(key, import_id)
+    if current_user_campaign_id:
+        campaign_ids.append(current_user_campaign_id)
     if len(campaign_ids) > 0:
         for campaign_id in campaign_ids:
             log(import_id, f"Importing campaign {campaign_id}", to_client=True)
