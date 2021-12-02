@@ -1,27 +1,27 @@
 import copy
-import datetime
+from datetime import datetime
+from typing import Dict
 
 import dateutil
 import rb
 import ujson
 
-import redis_map
+from .types import KitsuneRouter, node_options, nodes
 
 cluster: rb.Cluster = None
 
 
-class KitsuneRouter(rb.BaseRouter):
-    def get_host_for_key(self, key: str):
-        top_level_prefix_of_key = key.split(':')[0]
-        if (redis_map.keyspaces.get(top_level_prefix_of_key) is not None):
-            return redis_map.keyspaces[top_level_prefix_of_key]
-        else:
-            raise rb.UnroutableCommand()
-
-
 def init():
     global cluster
-    cluster = rb.Cluster(hosts=redis_map.nodes, host_defaults=redis_map.node_options, router_cls=KitsuneRouter, pool_options={"encoding": "utf-8", "decode_responses": True})
+    cluster = rb.Cluster(
+        hosts=nodes,
+        host_defaults=node_options,
+        router_cls=KitsuneRouter,
+        pool_options={
+            "encoding": "utf-8",
+            "decode_responses": True
+        }
+    )
     return cluster
 
 
@@ -46,14 +46,14 @@ def delete_keys_pattern(patterns):
             redis.delete(key)
 
 
-def serialize_dict(data):
+def serialize_dict(data: Dict):
     to_serialize = {
         'dates': [],
         'data': {}
     }
 
     for key, value in data.items():
-        if type(value) is datetime.datetime:
+        if type(value) is datetime:
             to_serialize['dates'].append(key)
             to_serialize['data'][key] = value.isoformat()
         else:

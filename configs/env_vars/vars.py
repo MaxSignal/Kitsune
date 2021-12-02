@@ -21,8 +21,9 @@ class ENV_VARS:
     DATABASE_DBNAME = os.getenv('DATABASE_DBNAME', 'kemonodb')
     DATABASE_USER = os.getenv('DATABASE_USER', 'nano')
     DATABASE_PASSWORD = os.getenv('DATABASE_PASSWORD', 'shinonome')
-    REDIS_HOST = os.getenv('REDIS_HOST', 'localhost')
+    REDIS_HOST = os.getenv('REDIS_HOST', 'kemono-redis')
     REDIS_PORT = os.getenv('REDIS_PORT', '6379')
+    REDIS_PASSWORD = os.getenv('REDIS_PASSWORD')
     PROXIES = os.getenv('PROXIES')
     BAN_URL = os.getenv('BAN_URL')
     PUBKEY = os.getenv('PUBKEY', """
