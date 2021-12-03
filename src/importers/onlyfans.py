@@ -7,8 +7,8 @@ from ..internals.database.database import get_raw_conn, return_conn
 from ..internals.utils.scrapper import create_scrapper_session
 from ..internals.utils.proxy import get_proxy
 from ..internals.utils.logger import log
-from ..lib.artist import get_all_dnp, get_all_artist_post_ids, get_all_artist_flagged_post_ids
-from ..lib.post import delete_all_post_cache_keys, delete_post_flags # write_post_to_db, 
+from ..lib.artist import get_all_dnp, get_all_artist_post_ids, get_all_artist_flagged_post_ids, update_artist
+from ..lib.post import delete_all_post_cache_keys, delete_post_flags, handle_post_import
 from ..internals.utils.download import download_file
 from base64 import b64decode, b64encode
 
@@ -55,6 +55,7 @@ def import_posts(import_id, key, contributor_id, allowed_to_auto_import, key_id)
                     log(import_id, f"Skipping post {post_id} because the author is unknown")
                     continue
                 
+                user_id = post['author']['username']
                 post_id = str(post['id'])
 
                 if len(list(filter(lambda artist: artist['id'] == user_id and artist['service'] == 'onlyfans', dnp))) > 0:
@@ -100,27 +101,7 @@ def import_posts(import_id, key, contributor_id, allowed_to_auto_import, key_id)
                             'path': hash_filename
                         })
 
-                post_model['embed'] = json.dumps(post_model['embed'])
-                post_model['file'] = json.dumps(post_model['file'])
-                for i in range(len(post_model['attachments'])):
-                    post_model['attachments'][i] = json.dumps(post_model['attachments'][i])
-
-                columns = post_model.keys()
-                data = ['%s'] * len(post_model.values())
-                data[-1] = '%s::jsonb[]' # attachments
-                query = "INSERT INTO posts ({fields}) VALUES ({values}) ON CONFLICT (id, service) DO UPDATE SET {updates}".format(
-                    fields = ','.join(columns),
-                    values = ','.join(data),
-                    updates = ','.join([f'{column}=EXCLUDED.{column}' for column in columns])
-                )
-                conn = get_raw_conn()
-                try:
-                    cursor = conn.cursor()
-                    cursor.execute(query, list(post_model.values()))
-                    conn.commit()
-                finally:
-                    return_conn(conn)
-                
+                handle_post_import(post_model)
                 update_artist('onlyfans', user_id)
                 delete_post_flags('onlyfans', user_id, post_id)
 
