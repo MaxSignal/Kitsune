@@ -15,34 +15,21 @@ load_dotenv(CONSTANTS.PROJECT_PATH.joinpath('.env'))
 
 
 class ENV_VARS:
-    FLASK_ENV = os.getenv('FLASK_ENV', 'development')
-    SERVER_PORT = os.getenv('WEBSERVER_PORT', '80')
-    DATABASE_HOST = os.getenv('DATABASE_HOST', 'localhost')
-    DATABASE_DBNAME = os.getenv('DATABASE_DBNAME', 'kemonodb')
-    DATABASE_USER = os.getenv('DATABASE_USER', 'nano')
-    DATABASE_PASSWORD = os.getenv('DATABASE_PASSWORD', 'shinonome')
-    REDIS_HOST = os.getenv('REDIS_HOST', 'kemono-redis')
-    REDIS_PORT = os.getenv('REDIS_PORT', '6379')
+    FLASK_ENV = os.getenv('FLASK_ENV')
+    SERVER_PORT = os.getenv('KEMONO_ARCHIVER_PORT')
+    DATABASE_HOST = os.getenv('DATABASE_HOST')
+    DATABASE_NAME = os.getenv('DATABASE_NAME')
+    DATABASE_USER = os.getenv('DATABASE_USER')
+    DATABASE_PASSWORD = os.getenv('DATABASE_PASSWORD')
+    REDIS_HOST = os.getenv('REDIS_HOST')
+    REDIS_PORT = os.getenv('REDIS_PORT')
     REDIS_PASSWORD = os.getenv('REDIS_PASSWORD')
-    PROXIES = os.getenv('PROXIES')
-    BAN_URL = os.getenv('BAN_URL')
-    PUBKEY = os.getenv('PUBKEY', """
-        MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAvEuPOaLW77ymMTMWSzNz
-        VqC+/DI7EWI7v3zaLBydH0gVN3FqMlRYOvUYu65K92oM1SYcj2b7sQLbbyEjYLCp
-        w3/vc7X5mnFeFghMmN/51ttygV/rmJ8c9TioVOUIphJP6J86AG2MLipUueIZagtf
-        2kkzDX544MHbEiJo/LRGjykKtnjMcAH0D4FWZJMPH7P+beI/duLR4pq7bzGOAHEV
-        SWTgeHC7MHwoBoMbq03t0R2TjEeShMJKek1dmtiuJ/U0pLdA5wLG2jEcfjI4OZ48
-        w10P3DPqRrcH0Q1wHM2zlGEua1LEhPpnUi+xoRXHO1G1m3j3AEXsBZ+JPb7j8c6k
-        pQ6IF6VI8dLpBJN5lfKrJXSV8Ui4TZQ0/DPa3z+U+9tekpf3/F2CVhcyMl/nURGo
-        UvfNUNtw7MkR+bV1exPIFpLjOVma0yr2FE3/54ZJrsaf7NG0ONdUgtaSCinxldrA
-        jMKkn749YzjgtTj4qbsrKMSONUtw+LWXiJvgP4s9v1s03m7BUZ7lWBcBFAXAexOx
-        P76veTBuTQWYFoZfAeTRIqKGdW6lWHHVlYyeK7+HBYUQ59uwmp4vZ1nO1yGlefqz
-        sVoQGSPVJWdVNVU/rAlyrBVjxJ2ZM54jkdlefd4DRZhLz3JQ6k3PBF40vnL7CYxW
-        XxJRiGbXlDkdqYhAgA2AyTcCAwEAAQ==
-    """)
-    SALT = os.getenv('SALT', '"lolololololololol"')
-    PUBSUB = os.getenv('PUBSUB', 'false')
-    PUBSUB_QUEUE_LIMIT = os.getenv('PUBSUB_QUEUE_LIMIT', '200')
+    PROXIES = os.getenv('KEMONO_PROXIES')
+    BAN_URL = os.getenv('KEMONO_BAN_URL')
+    PUBKEY = os.getenv('KEMONO_PUBKEY')
+    SALT = os.getenv('KEMONO_SALT')
+    PUBSUB = os.getenv('KEMONO_PUBSUB')
+    PUBSUB_QUEUE_LIMIT = os.getenv('KEMONO_PUBSUB_QUEUE_LIMIT')
 
 
 def validate_vars(var_list: List[Optional[str]]):

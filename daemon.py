@@ -17,7 +17,7 @@ logging.getLogger('urllib3').setLevel(logging.WARNING)
 database.init()
 redis.init()
 
-backend = get_backend(DERIVED_VARS.PG_URL)
+backend = get_backend(DERIVED_VARS.DATABASE_URL)
 migrations = read_migrations('./migrations')
 with backend.lock():
     backend.apply_migrations(backend.to_apply(migrations))

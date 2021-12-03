@@ -2,8 +2,7 @@ from flask import Flask, g
 
 import bjoern
 
-from configs.vars import webserver_port
-from configs.derived_vars import is_development
+from configs.env_vars import ENV_VARS, DERIVED_VARS
 from src.endpoints.api import api
 from src.endpoints.icons import icons
 from src.endpoints.banners import banners
@@ -16,14 +15,14 @@ app.register_blueprint(api)
 app.register_blueprint(icons)
 app.register_blueprint(banners)
 
-if is_development:
+if DERIVED_VARS.IS_DEVELOPMENT:
     from development import development
     app.register_blueprint(development)
 
 
 def run():
     print('Webserver is starting!')
-    bjoern.run(app, '0.0.0.0', int(webserver_port))
+    bjoern.run(app, '0.0.0.0', int(ENV_VARS.SERVER_PORT))
 
 
 @app.teardown_appcontext

@@ -17,7 +17,7 @@ def init():
             idle_timeout=300,
             dsn=make_dsn(
                 host=ENV_VARS.DATABASE_HOST,
-                dbname=ENV_VARS.DATABASE_DBNAME,
+                dbname=ENV_VARS.DATABASE_NAME,
                 user=ENV_VARS.DATABASE_USER,
                 password=ENV_VARS.DATABASE_PASSWORD,
                 port=5432

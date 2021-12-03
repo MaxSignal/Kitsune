@@ -1,12 +1,11 @@
 import os
 import tempfile
 from pathlib import Path
+from typing import List
 from uuid import uuid4
 
-from configs.derived_vars import temp_dir_root
+from configs.env_vars import CONSTANTS
 from src.internals.utils.utils import get_hash_of_file
-
-from typing import List
 
 
 def get_folder_file_paths(folder: Path, extensions: List[str] = None) -> List[Path]:
@@ -41,8 +40,8 @@ def create_temporary_directory() -> Path:
     """
     Creates temporary directory.
     """
-    os.makedirs(temp_dir_root, exist_ok=True)
-    temp_dir = tempfile.mkdtemp(dir=str(temp_dir_root))
+    os.makedirs(CONSTANTS.TEMP_DIR_ROOT, exist_ok=True)
+    temp_dir = tempfile.mkdtemp(dir=str(CONSTANTS.TEMP_DIR_ROOT))
     temp_name = f'{str(uuid4())}.temp'
     temp_path = Path(temp_dir, temp_name)
     return temp_path
