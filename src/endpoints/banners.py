@@ -15,8 +15,7 @@ from typing import TypedDict, Callable
 from threading import Thread
 
 banners = Blueprint('banners', __name__)
-
-banners_path = join(config.download_path, 'banners')
+banners_path = Path(config.download_path, 'banners')
 
 
 class ServiceDataType(IntEnum):
@@ -26,16 +25,9 @@ class ServiceDataType(IntEnum):
 
 class BannerInformationEntry(TypedDict):
     cloudflare: bool
-    # @REVIEW the same issues as `data_url` in icons dict
-    # @RESPONSE: see icons.pyL38
-    # @REVIEW: see icons module
     data_url: str
     data_req_headers: dict
     data_type: ServiceDataType
-    # @REVIEW: it's not initialized by this name
-    # @RESPONSE: see icons.pyL43
-    # @REVIEW: see icons module
-    # @RESPONSE: done
     banner_url: Callable
 
 
@@ -73,20 +65,19 @@ service_banner_information = {
 
 def download_banner(service, user):
     service_data = service_banner_information.get(service)
-    # @REVIEW: This isn't icons path and the same issue with `Path` init applies.
-    # Fix your local setup, since that error should've prevented you from committing in the first place.
-    service_banners_path = Path(join(banners_path, service))
+    service_banners_path = Path(banners_path, service)
+    user_banners_path = Path(service_banners_path, user)
     try:
-        if service_data and not exists(join(service_banners_path, user)):
+        if service_data and not exists(user_banners_path):
             makedirs(service_banners_path, exist_ok=True)
             scraper = create_scrapper_session(useCloudscraper=service_data['cloudflare']).get(service_data['data_url'].format(user_id=user), headers=service_data['data_req_headers'], proxies=get_proxy())
             scraper.raise_for_status()
             data = scraper.json() if service_data['data_type'] == ServiceDataType.JSON else scraper.text
-            download_branding(service_banners_path, service_data['banner_url'](data), name=user)
+            download_branding(str(service_banners_path), service_data['banner_url'](data), name=user)
     except Exception:
         logging.exception(f'Exception when downloading banner for user {user} on {service}')
         # create an empty file to prevent future requests for the same user if there is an issue.
-        with open(join(service_banners_path, user), 'w') as _:
+        with open(user_banners_path, 'w') as _:
             pass
 
 
