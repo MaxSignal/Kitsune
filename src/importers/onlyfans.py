@@ -54,7 +54,7 @@ def import_posts(import_id, key, contributor_id, allowed_to_auto_import, key_id)
                 if not post['author'].get('username'):
                     log(import_id, f"Skipping post {post_id} because the author is unknown")
                     continue
-                
+
                 user_id = post['author']['username']
                 post_id = str(post['id'])
 
@@ -90,16 +90,28 @@ def import_posts(import_id, key, contributor_id, allowed_to_auto_import, key_id)
 
                 for media in post['media']:
                     if media['canView']:
-                        reported_filename, hash_filename, _ = download_file(
-                            media['full'],
-                            'onlyfans',
-                            user_id,
-                            post_id
-                        )
-                        post_model['attachments'].append({
-                            'name': reported_filename,
-                            'path': hash_filename
-                        })
+                        if not post_model['file']:
+                            reported_filename, hash_filename, _ = download_file(
+                                media['full'],
+                                'onlyfans',
+                                user_id,
+                                post_id
+                            )
+                            post_model['file'] = {
+                                'name': reported_filename,
+                                'path': hash_filename
+                            }
+                        else:
+                            reported_filename, hash_filename, _ = download_file(
+                                media['full'],
+                                'onlyfans',
+                                user_id,
+                                post_id
+                            )
+                            post_model['attachments'].append({
+                                'name': reported_filename,
+                                'path': hash_filename
+                            })
 
                 handle_post_import(post_model)
                 update_artist('onlyfans', user_id)
