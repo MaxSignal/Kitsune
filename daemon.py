@@ -1,8 +1,7 @@
 import logging
 from threading import Thread
-from distutils.util import strtobool
 
-from configs.env_vars import ENV_VARS, DERIVED_VARS
+from configs.env_vars import DERIVED_VARS
 from src.internals.utils import indexer, key_watcher
 from yoyo import get_backend, read_migrations
 
@@ -24,6 +23,6 @@ with backend.lock():
 
 
 Thread(target=indexer.run).start()
-if (strtobool(ENV_VARS.PUBSUB)):
+if DERIVED_VARS.IS_PUBSUB_ENABLED:
     Thread(target=key_watcher.watch).start()
 Thread(target=server.run).start()

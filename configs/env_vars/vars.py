@@ -24,12 +24,12 @@ class ENV_VARS:
     REDIS_HOST = os.getenv('REDIS_HOST')
     REDIS_PORT = os.getenv('REDIS_PORT')
     REDIS_PASSWORD = os.getenv('REDIS_PASSWORD')
-    PROXIES = os.getenv('KEMONO_PROXIES')
-    BAN_URL = os.getenv('KEMONO_BAN_URL')
-    PUBKEY = os.getenv('KEMONO_PUBKEY')
-    SALT = os.getenv('KEMONO_SALT')
-    PUBSUB = os.getenv('KEMONO_PUBSUB')
-    PUBSUB_QUEUE_LIMIT = os.getenv('KEMONO_PUBSUB_QUEUE_LIMIT')
+    PROXIES = os.getenv('KEMONO_ARCHIVER_PROXIES')
+    BAN_URL = os.getenv('KEMONO_ARCHIVER_BAN_URL')
+    PUBKEY = os.getenv('KEMONO_ARCHIVER_PUBKEY')
+    SALT = os.getenv('KEMONO_ARCHIVER_SALT')
+    PUBSUB = os.getenv('KEMONO_ARCHIVER_PUBSUB')
+    PUBSUB_QUEUE_LIMIT = os.getenv('KEMONO_ARCHIVER_PUBSUB_QUEUE_LIMIT')
 
 
 def validate_vars(var_list: List[Optional[str]]):

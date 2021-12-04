@@ -1,3 +1,6 @@
 from .kitsune_router import KitsuneRouter
 from .keys import Redis_Keys
-from .constants import node_options, nodes
+
+nodes = {
+    0: {'db': 0}
+}

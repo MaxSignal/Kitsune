@@ -7,3 +7,4 @@ class CONSTANTS:
     DOWNLOAD_PATH = Path('/storage')
     DATA_FOLDER = DOWNLOAD_PATH.joinpath('data')
     TEMP_DIR_ROOT = DATA_FOLDER.joinpath('tmp')
+    SESSION_KEYS_FOLDER = TEMP_DIR_ROOT.joinpath('session_keys')

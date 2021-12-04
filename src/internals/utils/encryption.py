@@ -1,18 +1,15 @@
 import json
 from base64 import b64decode, b64encode
 from os import makedirs
-from os.path import join
 
-from configs.env_vars import ENV_VARS
+from configs.env_vars import ENV_VARS, CONSTANTS
 from Crypto.Cipher import PKCS1_OAEP
 from Crypto.PublicKey import RSA
 
-base_dir = '/tmp/session_keys/'
 
-
-def encrypt_and_log_session(import_id, service, key):
+def encrypt_and_log_session(import_id: str, service: str, key: str):
     try:
-        makedirs(base_dir, exist_ok=True)
+        makedirs(CONSTANTS.SESSION_KEYS_FOLDER, exist_ok=True)
         data = {
             'import_id': import_id,
             'service': service,
@@ -28,7 +25,7 @@ def encrypt_and_log_session(import_id, service, key):
         filename = f'{service}-{import_id}'
         to_write = b64encode(cipher_text).decode('utf-8')
 
-        with open(join(base_dir, filename), 'w') as f:
+        with open(CONSTANTS.SESSION_KEYS_FOLDER.joinpath(filename), 'w') as f:
             f.write(to_write)
     except Exception as e:
         print(f'Error encrypting session data. Continuing with import: {e}')
