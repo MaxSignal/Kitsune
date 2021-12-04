@@ -59,6 +59,13 @@ service_banner_information = {
         data_req_headers={},
         data_type=ServiceDataType.JSON,
         banner_url=lambda data: data['fanclub']['cover']['main']
+    ),
+    'onlyfans': BannerInformationEntry(
+        cloudflare=True,
+        data_url='https://fansmetrics.com/{user_id}',
+        data_req_headers={},
+        data_type=ServiceDataType.HTML,
+        banner_url=lambda data: BeautifulSoup(data, 'html.parser').find_all('a', class_='profile-gallery-link')[1]['href'],
     )
 }
 
