@@ -1,5 +1,9 @@
 from .keys import Redis_Keys
 
+nodes = {
+    0: {'db': 0}
+}
+
 keyspaces = {
     Redis_Keys.ACCOUNT: 0,
     Redis_Keys.SAVED_KEY_IMPORT_IDS: 0,

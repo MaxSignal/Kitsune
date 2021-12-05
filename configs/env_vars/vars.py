@@ -1,15 +1,9 @@
 import os
-from typing import List, Optional
+from typing import List
 
 from dotenv import load_dotenv
 
 from .constants import CONSTANTS
-
-# TODO: use it later
-env_filename = dict(
-    development='.env.dev',
-    production='.env.prod'
-)
 
 load_dotenv(CONSTANTS.PROJECT_PATH.joinpath('.env'))
 
@@ -32,7 +26,7 @@ class ENV_VARS:
     PUBSUB_QUEUE_LIMIT = os.getenv('KEMONO_ARCHIVER_PUBSUB_QUEUE_LIMIT')
 
 
-def validate_vars(var_list: List[Optional[str]]):
+def validate_vars(var_list: List[str]):
     missing_vars = []
 
     for var in var_list:
@@ -44,5 +38,5 @@ def validate_vars(var_list: List[Optional[str]]):
         raise ValueError(f'These environment variables are not set: {var_string}')
 
 
-critical_vars = []
+critical_vars = ["SALT", "PUBKEY"]
 validate_vars(critical_vars)
