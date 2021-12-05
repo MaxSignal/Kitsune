@@ -199,6 +199,7 @@ def index_artists():
                 delete_artist_cache_keys(post['service'], post['user'])
         except Exception:
             logging.exception(f"Error while indexing user {post['user']}")
+            continue
 
     cursor.close()
     return_conn(conn)

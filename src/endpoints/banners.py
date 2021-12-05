@@ -1,91 +1,92 @@
-from flask import Blueprint, redirect, current_app
-
-import requests
-import cloudscraper
+import logging
+from enum import IntEnum
 from os import makedirs
 from os.path import exists, join
-from bs4 import BeautifulSoup
+from pathlib import Path
+from threading import Thread
+from typing import Callable, TypedDict
 
-from configs.env_vars import CONSTANTS
+import cloudscraper
+import requests
+from bs4 import BeautifulSoup
+from flask import Blueprint, app, current_app, make_response, redirect, request
 from src.internals.utils.download import download_branding
 from src.internals.utils.proxy import get_proxy
+from src.internals.utils.scrapper import create_scrapper_session
+
+from configs.env_vars import CONSTANTS
 
 banners = Blueprint('banners', __name__)
+banners_path = CONSTANTS.DOWNLOAD_PATH.joinpath('banners')
 
 
-@banners.route('/banners/<service>/<user>')
+class ServiceDataType(IntEnum):
+    HTML = 1
+    JSON = 2
+
+
+class BannerInformationEntry(TypedDict):
+    cloudflare: bool
+    data_url: str
+    data_req_headers: dict
+    data_type: ServiceDataType
+    banner_url: Callable
+
+
+service_banner_information = {
+    'patreon': BannerInformationEntry(
+        cloudflare=True,
+        data_url='https://api.patreon.com/user/{user_id}',
+        data_req_headers={},
+        data_type=ServiceDataType.JSON,
+        banner_url=lambda data: data['included'][0]['attributes']['cover_photo_url']
+    ),
+    'fanbox': BannerInformationEntry(
+        cloudflare=False,
+        data_url='https://api.fanbox.cc/creator.get?userId={user_id}',
+        data_req_headers={},
+        data_type=ServiceDataType.JSON,
+        banner_url=lambda data: data['body']['coverImageUrl']
+    ),
+    'subscribestar': BannerInformationEntry(
+        cloudflare=True,
+        data_url='https://subscribestar.adult/{user_id}',
+        data_req_headers={},
+        data_type=ServiceDataType.HTML,
+        banner_url=lambda data: BeautifulSoup(data, 'html.parser').find('img', class_='profile_main_info-cover')['src'],
+    ),
+    'fantia': BannerInformationEntry(
+        cloudflare=False,
+        data_url='https://fantia.jp/api/v1/fanclubs/{user_id}',
+        data_req_headers={},
+        data_type=ServiceDataType.JSON,
+        banner_url=lambda data: data['fanclub']['cover']['main']
+    )
+}
+
+
+def download_banner(service, user):
+    service_data = service_banner_information.get(service)
+    service_banners_path = Path(banners_path, service)
+    user_banners_path = Path(service_banners_path, user)
+    try:
+        if service_data and not exists(user_banners_path):
+            makedirs(service_banners_path, exist_ok=True)
+            scraper = create_scrapper_session(useCloudscraper=service_data['cloudflare']).get(service_data['data_url'].format(user_id=user), headers=service_data['data_req_headers'], proxies=get_proxy())
+            scraper.raise_for_status()
+            data = scraper.json() if service_data['data_type'] == ServiceDataType.JSON else scraper.text
+            download_branding(str(service_banners_path), service_data['banner_url'](data), name=user)
+    except Exception:
+        logging.exception(f'Exception when downloading banner for user {user} on {service}')
+        # create an empty file to prevent future requests for the same user if there is an issue.
+        with open(user_banners_path, 'w') as _:
+            pass
+
+
+@banners.get('/banners/<service>/<user>')
 def import_banner(service, user):
-    makedirs(join(CONSTANTS.DOWNLOAD_PATH, 'banners', service), exist_ok=True)
-    if not exists(join(CONSTANTS.DOWNLOAD_PATH, 'banners', service, user)):
-        try:
-            if service == 'patreon':
-                scraper = cloudscraper.create_scraper().get('https://api.patreon.com/user/' + user, proxies=get_proxy())
-                data = scraper.json()
-                scraper.raise_for_status()
-                if data.get('included') and data['included'][0]['attributes'].get('cover_photo_url'):
-                    download_branding(
-                        join(CONSTANTS.DOWNLOAD_PATH, 'banners', service),
-                        data['included'][0]['attributes']['cover_photo_url'],
-                        name=user
-                    )
-                else:
-                    raise BannerException()
-            elif service == 'fanbox':
-                scraper = requests.get('https://api.fanbox.cc/creator.get?userId=' + user, headers={"origin": "https://fanbox.cc"}, proxies=get_proxy())
-                data = scraper.json()
-                scraper.raise_for_status()
-                if data['body']['coverImageUrl']:
-                    download_branding(
-                        join(CONSTANTS.DOWNLOAD_PATH, 'banners', service),
-                        data['body']['coverImageUrl'],
-                        name=user
-                    )
-                else:
-                    raise BannerException()
-            elif service == 'subscribestar':
-                scraper = cloudscraper.create_scraper()
-                resp = scraper.get('https://subscribestar.adult/' + user, proxies=get_proxy())
-                data = resp.text
-                resp.raise_for_status()
-                soup = BeautifulSoup(data, 'html.parser')
-                if soup.find('img', class_='profile_main_info-cover'):
-                    download_branding(
-                        join(CONSTANTS.DOWNLOAD_PATH, 'banners', service),
-                        soup.find('img', class_='profile_main_info-cover')['src'],
-                        name=user
-                    )
-                else:
-                    raise BannerException()
-            elif service == 'fantia':
-                scraper = requests.get('https://fantia.jp/api/v1/fanclubs/' + user, proxies=get_proxy())
-                data = scraper.json()
-                scraper.raise_for_status()
-                if data['fanclub']['cover']:
-                    download_branding(
-                        join(CONSTANTS.DOWNLOAD_PATH, 'banners', service),
-                        data['fanclub']['cover']['main'],
-                        name=user
-                    )
-                else:
-                    raise BannerException()
-            else:
-                with open(join(CONSTANTS.DOWNLOAD_PATH, 'banners', service, user), 'w') as _:
-                    pass
-        except BannerException:
-            current_app.logger.exception(f'Error importing banner for {user} on {service}')
-            with open(join(CONSTANTS.DOWNLOAD_PATH, 'banners', service, user), 'w') as _:
-                pass
-        except requests.HTTPError as e:
-            if e.response.status_code == 404:
-                with open(join(CONSTANTS.DOWNLOAD_PATH, 'banners', service, user), 'w') as _:
-                    pass
-            else:
-                current_app.logger.exception(f'HTTP error importing banner for {user} on {service}')
-
-    response = redirect(join('/', 'banners', service, user), code=302)
+    Thread(target=download_banner, args=(service, user)).start()
+    response = make_response()
+    response.headers['Refresh'] = f'10; url={request.full_path}'
     response.autocorrect_location_header = False
     return response
-
-
-class BannerException(Exception):
-    pass
