@@ -69,7 +69,7 @@ service_icon_information = {
         data_url='https://subscribestar.adult/{user_id}',
         data_req_headers={},
         data_type=ServiceDataType.HTML,
-        icon_url=lambda data: BeautifulSoup(data, 'html.parser').find('div', class_='profile_main_info-userpic').contents[0]['src'],
+        icon_url=lambda data: BeautifulSoup(data, 'html.parser').find('div', class_='profile_main_info-userpic').contents[0]['src']
     ),
     'gumroad': IconInformationEntry(
         cloudflare=True,
@@ -84,6 +84,13 @@ service_icon_information = {
         data_req_headers={},
         data_type=ServiceDataType.JSON,
         icon_url=lambda data: data['fanclub']['icon']['main']
+    ),
+    'onlyfans': IconInformationEntry(
+        cloudflare=True,
+        data_url='https://fansmetrics.com/{user_id}',
+        data_req_headers={},
+        data_type=ServiceDataType.HTML,
+        icon_url=lambda data: BeautifulSoup(data, 'html.parser').find_all('a', class_='profile-gallery-link')[0]['href'],
     )
 }
 

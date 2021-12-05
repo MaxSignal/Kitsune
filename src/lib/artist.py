@@ -177,6 +177,12 @@ def index_artists():
                     "name": soup.find('strong', class_='prof_maker_name').string,
                     "service": "dlsite"
                 }
+            elif post["service"] == 'onlyfans':
+                model = {
+                    "id": post["user"],
+                    "name": post["user"],
+                    "service": "onlyfans"
+                }
             elif is_development:
                 from development import service_name
 
