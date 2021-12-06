@@ -1,3 +1,7 @@
+# @REVIEW: This module seems to be very specific to the importer logic.
+# Seeing as no other importer has a `lib` equivalent,
+# consider moving this one to the importer folder.
+# Also provide type hints to all functions.
 import hashlib
 import time
 from urllib.parse import urlparse
@@ -7,12 +11,17 @@ import httpx
 
 # Mostly ripped from https://github.com/Amenly/onlyfans-scraper.
 
+# @REVIEW: `auth` argument in these functions is of quite specific shape,
+# so you have to provide a TypedDict for it.
+
 
 def get_cookies(auth):
+    # @REVIEW: do not assign new keys to dict after its creation
     data = {}
     data['sess'] = auth['sess']
     data['auth_id'] = auth['auth_id']
     if auth['auth_uid_']:
+        # @REVIEW: use `f''` string for interpolation
         data['auth_uid_{}'.format(auth['auth_id'])] = auth['auth_uid_']
     return data
 
@@ -36,6 +45,7 @@ def create_sign(link, headers):
     """
 
     (static_param, fmt, checksum_indexes, checksum_constant) = get_request_auth()
+    # @REVIEW: use `dict()` constructor for dict literals.
     content = {
         'static_param': static_param,
         'format': fmt,
@@ -45,12 +55,15 @@ def create_sign(link, headers):
 
     time2 = str(round(time.time() * 1000))
 
+    # @REVIEW: no reason to parse the same link twice
     path = urlparse(link).path
     query = urlparse(link).query
     path = path if not query else f"{path}?{query}"
 
+    # @REVIEW: do not reassign function arguments
     static_param = content['static_param']
 
+    # @REVIEW: no 1 letter variables
     a = [static_param, time2, path, headers['user-id']]
     msg = "\n".join(a)
 
@@ -63,6 +76,8 @@ def create_sign(link, headers):
     checksum_constant = content['checksum_constant']
     checksum = sum(sha_1_b[i] for i in checksum_indexes) + checksum_constant
 
+    # @REVIEW: No `format()` with positional arguments.
+    # Also it's not obvious what string is it even formatting.
     final_sign = content['format'].format(sha_1_sign, abs(checksum))
 
     headers.update(
@@ -75,6 +90,7 @@ def create_sign(link, headers):
 
 
 ###
+# @REVIEW: this function should return a typed dict.
 def get_request_auth():
     with httpx.Client(http2=True) as c:
         r = c.get('https://raw.githubusercontent.com/DATAHOARDERS/dynamic-rules/main/onlyfans.json')
