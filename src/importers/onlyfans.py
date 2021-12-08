@@ -25,6 +25,29 @@ from ..lib.artist import get_all_dnp, get_all_artist_post_ids, get_all_artist_fl
 from ..lib.post import delete_all_post_cache_keys, delete_post_flags, handle_post_import
 from ..internals.utils.download import download_file
 from base64 import b64decode, b64encode
+from io import StringIO
+from html.parser import HTMLParser
+
+
+class MLStripper(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.reset()
+        self.strict = False
+        self.convert_charrefs = True
+        self.text = StringIO()
+
+    def handle_data(self, d):
+        self.text.write(d)
+
+    def get_data(self):
+        return self.text.getvalue()
+
+
+def strip_tags(html):
+    s = MLStripper()
+    s.feed(html)
+    return s.get_data()
 
 
 def import_posts(import_id, key, contributor_id, allowed_to_auto_import, key_id):  # noqa C901
@@ -106,13 +129,14 @@ def import_posts(import_id, key, contributor_id, allowed_to_auto_import, key_id)
                 # @REVIEW: Use `TypedDict` for this dict initialization.
                 # And don't mutate it afterwards, so the values for its keys
                 # should be figured out beforehand.
+                stripped_content = strip_tags(post.get('rawText') or '')
                 post_model = {
                     'id': post_id,
                     '"user"': user_id,
                     'service': 'onlyfans',
                     # @REVIEW: this assignment should be calculated beforehand into a separate variable
-                    'title': (post['rawText'][:60] + '..') if len(post['rawText']) > 60 else post['rawTitle'],
-                    'content': post['rawText'],
+                    'title': (stripped_content[:60] + '..') if len(stripped_content) > 60 else stripped_content,
+                    'content': post.get('rawText') or '',
                     'embed': {},
                     'shared_file': False,
                     'added': datetime.datetime.now(),
@@ -129,7 +153,8 @@ def import_posts(import_id, key, contributor_id, allowed_to_auto_import, key_id)
                                 media['full'],
                                 'onlyfans',
                                 user_id,
-                                post_id
+                                post_id,
+                                headers=get_auth_headers(media['full'])
                             )
                             post_model['file'] = {
                                 'name': reported_filename,
@@ -140,7 +165,8 @@ def import_posts(import_id, key, contributor_id, allowed_to_auto_import, key_id)
                                 media['full'],
                                 'onlyfans',
                                 user_id,
-                                post_id
+                                post_id,
+                                headers=get_auth_headers(media['full'])
                             )
                             post_model['attachments'].append({
                                 'name': reported_filename,
