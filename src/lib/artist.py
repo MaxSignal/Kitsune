@@ -177,6 +177,7 @@ def index_artists():
                     "name": soup.find('strong', class_='prof_maker_name').string,
                     "service": "dlsite"
                 }
+            # @REVIEW: this doesn't do any requests
             elif post["service"] == 'onlyfans':
                 model = {
                     "id": post["user"],
@@ -202,7 +203,7 @@ def index_artists():
         except Exception:
             logging.exception(f"Error while indexing user {post['user']}")
             continue
-        
+
     cursor.close()
     return_conn(conn)
 
