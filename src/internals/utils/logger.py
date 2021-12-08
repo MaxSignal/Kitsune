@@ -19,6 +19,7 @@ def log(log_id, msg, level = 'debug', to_client = True):
 
         if to_client:
             redis.rpush(f'importer_logs:{log_id}', msg)
+            redis.expire(f'importer_logs:{log_id}', 60 * 60 * 48)
     finally:
         log_lock.release()
 
