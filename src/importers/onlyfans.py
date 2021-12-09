@@ -154,7 +154,7 @@ def import_posts(import_id, key, contributor_id, allowed_to_auto_import, key_id)
                                 'onlyfans',
                                 user_id,
                                 post_id,
-                                headers=get_auth_headers(media['full'])
+                                cookies=auth_cookies
                             )
                             post_model['file'] = {
                                 'name': reported_filename,
@@ -166,7 +166,7 @@ def import_posts(import_id, key, contributor_id, allowed_to_auto_import, key_id)
                                 'onlyfans',
                                 user_id,
                                 post_id,
-                                headers=get_auth_headers(media['full'])
+                                cookies=auth_cookies
                             )
                             post_model['attachments'].append({
                                 'name': reported_filename,
