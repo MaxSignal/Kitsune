@@ -98,16 +98,18 @@ def import_posts(import_id, key, contributor_id, allowed_to_auto_import, key_id)
         post_id = None
         for post in scraper_data['list']:
             try:
-                if not post['author'].get('username'):
+                user_id = post['author'].get('username')
+                post_id = str(post['id'])
+
+                if not user_id:
+                    # Need to investigate why posts can have missing authors like this.
+                    # Maybe the process should switch to subscription lists instead of feeds to ensure this doesn't happen?
                     log(import_id, f"Skipping post {post_id} because the author is unknown")
                     continue
 
-                user_id = post['author']['username']
-                post_id = str(post['id'])
-
                 if len(list(filter(lambda artist: artist['id'] == user_id and artist['service'] == 'onlyfans', dnp))) > 0:
                     log(import_id, f"Skipping user {user_id} because they are in do not post list", to_client=True)
-                    return
+                    continue
 
                 # existence checking
                 # @REVIEW: looks like a candidate for a separate function
