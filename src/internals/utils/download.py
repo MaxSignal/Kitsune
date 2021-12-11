@@ -125,13 +125,19 @@ def download_file(
     discord_message_id: str = '',
     **kwargs
 ):
+    proxies = None
     makedirs(join(config.download_path, 'data', 'tmp'), exist_ok=True)
     temp_dir = tempfile.mkdtemp(dir=join(config.download_path, 'data', 'tmp'))
     temp_name = str(uuid.uuid4()) + '.temp'
     tries = 10
+
+    if kwargs.get('proxies'):
+        proxies = kwargs['proxies']
+        kwargs.pop('proxies')
+
     for i in range(tries):
         try:
-            r = requests.get(url, stream = True, proxies=get_proxy(), **kwargs)
+            r = requests.get(url, stream=True, proxies=proxies or get_proxy(), **kwargs)
             r.raw.read = functools.partial(r.raw.read, decode_content=True)
             r.raise_for_status()
             # Should retry on connection error
