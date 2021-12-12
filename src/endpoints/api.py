@@ -4,6 +4,7 @@ import os
 import config
 import threading
 
+from multiprocessing import Process
 from ..internals.cache.redis import get_redis
 from ..internals.utils import thread_master
 from ..internals.utils.flask_thread import FlaskThread
@@ -108,7 +109,7 @@ def import_api():
 
     if target is not None and args is not None:
         logger.log(import_id, f'Starting import. Your import id is {import_id}.')
-        FlaskThread(target=import_posts, args=(import_id, target, args)).start()
+        Process(target=import_posts, args=(import_id, target, args)).start()
     else:
         logger.log(import_id, f'Error starting import. Your import id is {import_id}.')
 
