@@ -178,6 +178,7 @@ def download_file(
                 post,
                 inline,
                 url,
+                r.raw.tell(),
                 discord=discord,
                 discord_message_server=discord_message_server,
                 discord_message_channel=discord_message_channel,
