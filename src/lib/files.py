@@ -12,6 +12,7 @@ def write_file_log(
     post,
     inline: bool,
     remote_path: str,
+    size: int,
     discord: bool = False,
     discord_message_server: str = '',
     discord_message_channel: str = '',
@@ -20,7 +21,7 @@ def write_file_log(
     conn = get_raw_conn()
 
     cursor = conn.cursor()
-    cursor.execute("INSERT INTO files (hash, mtime, ctime, mime, ext) VALUES (%s, %s, %s, %s, %s) ON CONFLICT (hash) DO UPDATE SET hash = EXCLUDED.hash RETURNING id", (fhash, mtime, ctime, mime, ext))
+    cursor.execute("INSERT INTO files (hash, mtime, ctime, mime, ext, size) VALUES (%s, %s, %s, %s, %s, %s) ON CONFLICT (hash) DO UPDATE SET hash = EXCLUDED.hash RETURNING id", (fhash, mtime, ctime, mime, ext, size))
     file_id = cursor.fetchone()['id']
 
     if (discord):
