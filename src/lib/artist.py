@@ -149,7 +149,7 @@ def index_artists():
                 soup = BeautifulSoup(resp, 'html.parser')
                 model = {
                     "id": post["user"],
-                    "name": soup.find('strong', class_='creator-profile-card__name').string.replace("\n", ""),
+                    "name": soup.select_one('.profile a.post-author').string.strip(),
                     "service": "gumroad"
                 }
             elif post["service"] == 'subscribestar':
@@ -162,7 +162,11 @@ def index_artists():
                     "service": "subscribestar"
                 }
             elif post["service"] == 'fantia':
-                user = requests.get('https://fantia.jp/api/v1/fanclubs/' + post["user"], proxies=get_proxy()).json()
+                user = requests.get(
+                    'https://fantia.jp/api/v1/fanclubs/' + post["user"],
+                    headers={'user-agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) discord/0.0.305 Chrome/69.0.3497.128 Electron/4.0.8 Safari/537.36'},
+                    proxies=get_proxy()
+                ).json()
                 model = {
                     "id": post["user"],
                     "name": user["fanclub"]["creator_name"],
