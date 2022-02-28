@@ -17,6 +17,7 @@ import datetime
 import requests
 from os.path import join
 from os import makedirs
+from bs4 import BeautifulSoup
 
 import sys
 sys.path.append('./PixivUtil2')
@@ -362,6 +363,21 @@ def import_posts_via_id(import_id, key, campaign_id, contributor_id=None, allowe
                                     'name': reported_filename,
                                     'path': hash_filename
                                 })
+
+                    soup = BeautifulSoup(post['content'], 'html.parser')
+                    for iframe in soup.select('iframe[src^="https://cdn.iframe.ly/"]'):
+                        api_url = iframe['src'].split('?', maxsplit=1)[0] + '.json'
+                        api_response = create_scrapper_session(useCloudscraper=False).get(api_url, proxies=get_proxy())
+                        api_data = api_response.json()
+                        iframe.parent.parent.replace_with(BeautifulSoup(f"""
+                            <a href="{api_data['url']}" target="_blank">
+                                <div class="embed-view">
+                                  <h3 class="subtitle">(frame embed)</h3>
+                                </div>
+                            </a>
+                            <br>
+                        """, 'html.parser'))
+                        post['content'] = str(soup)
 
                     handle_post_import(post_model)
                     delete_post_flags('fanbox', user_id, post_id)
