@@ -364,7 +364,7 @@ def import_posts_via_id(import_id, key, campaign_id, contributor_id=None, allowe
                                     'path': hash_filename
                                 })
 
-                    soup = BeautifulSoup(post['content'], 'html.parser')
+                    soup = BeautifulSoup(post_model['content'], 'html.parser')
                     for iframe in soup.select('iframe[src^="https://cdn.iframe.ly/"]'):
                         api_url = iframe['src'].split('?', maxsplit=1)[0] + '.json'
                         api_response = create_scrapper_session(useCloudscraper=False).get(api_url, proxies=get_proxy())
@@ -377,7 +377,7 @@ def import_posts_via_id(import_id, key, campaign_id, contributor_id=None, allowe
                             </a>
                             <br>
                         """, 'html.parser'))
-                        post['content'] = str(soup)
+                        post_model['content'] = str(soup)
 
                     handle_post_import(post_model)
                     delete_post_flags('fanbox', user_id, post_id)
