@@ -17,7 +17,7 @@ def init():
                 dbname = config.database_dbname,
                 user = config.database_user,
                 password = config.database_password,
-                port = 5432
+                port = config.database_port
             )
         )
     except Exception as e:
