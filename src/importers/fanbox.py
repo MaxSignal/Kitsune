@@ -240,6 +240,19 @@ def import_posts_via_id(import_id, key, campaign_id, contributor_id=None, allowe
                 user_id = post['user']['userId']
                 post_id = post['id']
 
+                url = f'https://api.fanbox.cc/post.info?postId={post_id}'
+                try:
+                    scraper = create_scrapper_session().get(
+                        url,
+                        cookies={'FANBOXSESSID': key},
+                        headers={'origin': 'https://fanbox.cc'},
+                        proxies=get_proxy()
+                    )
+                    post = scraper.json()['body']
+                    scraper.raise_for_status()
+                except requests.HTTPError as e:
+                    log(import_id, f'HTTP error when contacting Fanbox API ({url}). Stopping import.', 'exception')
+
                 parsed_post = FanboxPost(post_id, None, post)
                 if parsed_post.is_restricted:
                     log(import_id, f'Skipping post {post_id} from user {user_id} because post is from higher subscription tier')
