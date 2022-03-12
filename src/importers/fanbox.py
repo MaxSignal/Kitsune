@@ -206,7 +206,7 @@ def get_cancelled_ids(import_id, key, url='https://api.fanbox.cc/payment.listPai
 def import_posts_via_id(import_id, key, campaign_id, contributor_id=None, allowed_to_auto_import=None, key_id=None):  # noqa: C901
     url = 'https://api.fanbox.cc/post.listCreator?userId={}&limit=50'.format(campaign_id)
     try:
-        scraper = create_scrapper_session().get(
+        scraper = create_scrapper_session(useCloudscraper=False).get(
             url,
             cookies={'FANBOXSESSID': key},
             headers={'origin': 'https://fanbox.cc'},
@@ -242,7 +242,7 @@ def import_posts_via_id(import_id, key, campaign_id, contributor_id=None, allowe
 
                 url = f'https://api.fanbox.cc/post.info?postId={post_id}'
                 try:
-                    scraper = create_scrapper_session().get(
+                    scraper = create_scrapper_session(useCloudscraper=False).get(
                         url,
                         cookies={'FANBOXSESSID': key},
                         headers={'origin': 'https://fanbox.cc'},
