@@ -77,8 +77,7 @@ def watch(queue_limit=config.pubsub_queue_limit):
                                 logger.log(import_id, 'Exception occured while logging session.', 'exception', to_client=False)
 
                         if service == 'patreon':
-                            target = patreon.import_posts
-                            args = (service_key, allowed_to_scrape_dms, contributor_id, allowed_to_auto_import, key_id)
+                            return
                         elif service == 'fanbox':
                             target = fanbox.import_posts
                             args = (service_key, contributor_id, allowed_to_auto_import, key_id)
