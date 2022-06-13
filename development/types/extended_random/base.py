@@ -16,10 +16,19 @@ class Extended_Random(Random):
     unix_epoch_start = datetime.fromtimestamp(30256871)
     max_date = None
 
-    def __init__(self, x: Any = ..., max_date: datetime = None) -> None:
-        super().__init__(x=x)
+    @classmethod
+    def init(
+        cls,
+        seed: Any = None,
+        max_date: datetime = None
+    ):
+        "Using the class method because python is crying about arguments."
+        instance = cls(seed)
+
         if max_date:
-            self.max_date = max_date
+            instance.max_date = max_date
+
+        return instance
 
     def string(self, min_length: int = 5, max_length: int = 25, vocabulary: str = varchar_vocab):
         "Creates a continious string with random letters."

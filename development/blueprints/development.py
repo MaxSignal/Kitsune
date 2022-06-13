@@ -21,7 +21,7 @@ def health_check():
 
 @development.post('/development/test-entries/seeded')
 def generate_seeded_entries():
-    test_random = Extended_Random(dev_seed, dev_max_date)
+    test_random = Extended_Random.init(dev_seed, dev_max_date)
     key = dev_random.string(127, 255)
     import_id = get_import_id(key)
     # service = service_name
