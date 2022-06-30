@@ -28,7 +28,7 @@ api = Blueprint('api', __name__)
 @api.route('/api/autoimport', methods=['POST'])
 def autoimport_api():
     prv_key = request.form.get('private_key')
-
+    service = request.form.get('service', None)
     if not prv_key:
         return "No private key provided.", 401
 
@@ -50,21 +50,22 @@ def autoimport_api():
     except:
         return "Error while decrypting session tokens. The private key may be incorrect.", 401
 
-    for key in keys_to_import:
-        redis = get_redis()
-        import_id = get_import_id(key['decrypted_key'])
-        log_import_id(key['id'], import_id)
-        data = {
-            'key': key['decrypted_key'],
-            'key_id': key['id'],
-            'service': key['service'],
-            'channel_ids': key['discord_channel_ids'],
-            'auto_import': None,
-            'save_session_key': None,
-            'save_dms': None,
-            'contributor_id': key['contributor_id']
-        }
-        redis.set('imports:' + import_id, json.dumps(data))
+    if service is None or key['service'] == service:
+        for key in keys_to_import:
+            redis = get_redis()
+            import_id = get_import_id(key['decrypted_key'])
+            log_import_id(key['id'], import_id)
+            data = {
+                'key': key['decrypted_key'],
+                'key_id': key['id'],
+                'service': key['service'],
+                'channel_ids': key['discord_channel_ids'],
+                'auto_import': None,
+                'save_session_key': None,
+                'save_dms': None,
+                'contributor_id': key['contributor_id']
+            }
+            redis.set('imports:' + import_id, json.dumps(data))
 
     return '', 200
 
