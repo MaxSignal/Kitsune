@@ -50,8 +50,8 @@ def autoimport_api():
     except:
         return "Error while decrypting session tokens. The private key may be incorrect.", 401
 
-    if service is None or key['service'] == service:
-        for key in keys_to_import:
+    for key in keys_to_import:
+        if service is None or key['service'] == service:
             redis = get_redis()
             import_id = get_import_id(key['decrypted_key'])
             log_import_id(key['id'], import_id)
