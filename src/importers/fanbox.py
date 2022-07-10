@@ -174,7 +174,6 @@ def get_newsletters(import_id, key, url='https://api.fanbox.cc/newsletter.list')
         for newsletter in scraper_data['body']:
             newsletter_model = {
                 'id': newsletter['id'],
-                'service': 'fanbox',
                 'user_id': newsletter['creator']['user']['userId'],
                 'content': newsletter['body'],
                 'published': newsletter['createdAt']
