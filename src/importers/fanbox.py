@@ -182,7 +182,7 @@ def get_newsletters(import_id, key, url='https://api.fanbox.cc/newsletter.list')
 
             columns = newsletter_model.keys()
             data = ['%s'] * len(newsletter_model.values())
-            query = "INSERT INTO newsletters ({fields}) VALUES ({values}) ON CONFLICT DO NOTHING".format(
+            query = "INSERT INTO fanbox_newsletters ({fields}) VALUES ({values}) ON CONFLICT DO NOTHING".format(
                 fields=','.join(columns),
                 values=','.join(data)
             )
