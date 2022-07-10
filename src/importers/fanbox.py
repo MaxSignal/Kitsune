@@ -153,6 +153,48 @@ def get_subscribed_ids(import_id, key, contributor_id=None, allowed_to_auto_impo
     return campaign_ids
 
 
+def get_newsletters(import_id, key, url='https://api.fanbox.cc/newsletter.list'):
+    try:
+        scraper = create_scrapper_session().get(
+            url,
+            cookies={'FANBOXSESSID': key},
+            headers={'origin': 'https://www.fanbox.cc'},
+            proxies=get_proxy()
+        )
+        scraper_data = scraper.json()
+        scraper.raise_for_status()
+    except requests.HTTPError as exc:
+        log(import_id, f"Status code {exc.response.status_code} when contacting Fanbox API.", 'exception')
+        return
+    except Exception:
+        log(import_id, 'Error connecting to cloudscraper. Please try again.', 'exception')
+        return
+
+    if scraper_data.get('body'):
+        for newsletter in scraper_data['body']:
+            newsletter_model = {
+                'id': newsletter['id'],
+                'service': 'fanbox',
+                'user_id': newsletter['creator']['user']['userId'],
+                'content': newsletter['body'],
+                'published': newsletter['createdAt']
+            }
+
+            columns = newsletter_model.keys()
+            data = ['%s'] * len(newsletter_model.values())
+            query = "INSERT INTO newsletters ({fields}) VALUES ({values}) ON CONFLICT DO NOTHING".format(
+                fields=','.join(columns),
+                values=','.join(data)
+            )
+            conn = get_raw_conn()
+            try:
+                cursor = conn.cursor()
+                cursor.execute(query, list(newsletter_model.values()))
+                conn.commit()
+            finally:
+                return_conn(conn)
+
+
 # Retrieve ids of campaigns for which pledge has been cancelled but they've been paid for in this month.
 def get_cancelled_ids(import_id, key, url='https://api.fanbox.cc/payment.listPaid'):
     today_date = datetime.datetime.today()
@@ -428,6 +470,7 @@ def import_posts_via_id(import_id, key, campaign_id, contributor_id=None, allowe
 
 
 def import_posts(import_id, key, contributor_id=None, allowed_to_auto_import=None, key_id=None):
+    get_newsletters(import_id, key)
     # this block creates a list of campaign ids of both supported and canceled subscriptions within the month
     subscribed_ids = get_subscribed_ids(import_id, key)
     cancelled_ids = get_cancelled_ids(import_id, key)
