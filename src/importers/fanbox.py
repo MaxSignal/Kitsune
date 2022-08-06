@@ -172,6 +172,9 @@ def get_newsletters(import_id, key, url='https://api.fanbox.cc/newsletter.list')
 
     if scraper_data.get('body'):
         for newsletter in scraper_data['body']:
+            if not newsletter['creator']:
+                # The author of the newsletter has been suspended/terminated.
+                continue
             newsletter_model = {
                 'id': newsletter['id'],
                 'user_id': newsletter['creator']['user']['userId'],
