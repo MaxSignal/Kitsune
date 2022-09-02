@@ -1,5 +1,4 @@
 import config
-import redis
 import random
 import string
 import time
@@ -20,10 +19,12 @@ from setproctitle import setthreadtitle
 # a function that first runs existing import requests in a staggered manner (they may be incomplete as importers should delete their keys when they are done) then watches redis for new keys and handles queueing
 # needs to be run in a thread itself
 # remember to clear logs after successful import
-def watch(queue_limit=config.pubsub_queue_limit):
+
+
+def watch(queue_limit=config.pubsub_queue_limit):  # noqa: C901
     archiver_id = ''.join(random.choice(string.ascii_letters + string.digits) for x in range(16))
-    delete_keys_pattern([f"running_imports:*"])
-    setthreadtitle(f'KWATCHER')
+    delete_keys_pattern(["running_imports:*"])
+    setthreadtitle('KWATCHER')
     print(f'Key watcher ({archiver_id}) is starting!')
 
     redis = get_redis()
@@ -32,7 +33,7 @@ def watch(queue_limit=config.pubsub_queue_limit):
         for thread in threads_to_run:
             if not thread.is_alive():
                 threads_to_run.remove(thread)
-        
+
         for key in scan_keys('imports:*'):
             key_data = redis.get(key)
             if key_data:
@@ -43,7 +44,7 @@ def watch(queue_limit=config.pubsub_queue_limit):
                     print(f'An decoding error occured while processing import request {key.decode("utf-8")}; are you sending malformed JSON?')
                     delete_keys([key])
                     continue
-                
+
                 if redis.get(f"running_imports:{archiver_id}:{import_id}"):
                     continue
 
@@ -66,8 +67,8 @@ def watch(queue_limit=config.pubsub_queue_limit):
                         service = key_data['service']
                         allowed_to_auto_import = key_data.get('auto_import', False)
                         allowed_to_save_session = key_data.get('save_session_key', False)
-                        allowed_to_scrape_dms = key_data.get('save_dms', False)
-                        channel_ids = key_data.get('channel_ids')
+                        # allowed_to_scrape_dms = key_data.get('save_dms', False)
+                        # channel_ids = key_data.get('channel_ids')
                         contributor_id = key_data.get('contributor_id')
 
                         if service_key and service and allowed_to_save_session:
@@ -81,12 +82,16 @@ def watch(queue_limit=config.pubsub_queue_limit):
                         elif service == 'fanbox':
                             target = fanbox.import_posts
                             args = (service_key, contributor_id, allowed_to_auto_import, key_id)
+                        elif service == 'afdian':
+                            continue
+                        elif service == 'boosty':
+                            continue
                         elif service == 'subscribestar':
-                            target = subscribestar.import_posts
-                            args = (service_key, contributor_id, allowed_to_auto_import, key_id)
+                            continue
                         elif service == 'gumroad':
-                            target = gumroad.import_posts
-                            args = (service_key, contributor_id, allowed_to_auto_import, key_id)
+                            # target = gumroad.import_posts
+                            # args = (service_key, contributor_id, allowed_to_auto_import, key_id)
+                            continue
                         elif service == 'fantia':
                             target = fantia.import_posts
                             args = (service_key, contributor_id, allowed_to_auto_import, key_id)
@@ -94,10 +99,15 @@ def watch(queue_limit=config.pubsub_queue_limit):
                             target = onlyfans.import_posts
                             args = (service_key, contributor_id, allowed_to_auto_import, key_id)
                         elif service == 'discord':
-                            target = discord.import_posts
-                            if channel_ids is None:
-                                channel_ids = ''
-                            args = (service_key, channel_ids.strip().replace(" ", ""), contributor_id, allowed_to_auto_import, key_id)
+                            # target = discord.import_posts
+                            # if channel_ids is None:
+                            #     channel_ids = ''
+                            # args = (service_key, channel_ids.strip().replace(" ", ""), contributor_id, allowed_to_auto_import, key_id)
+                            continue
+                        elif service == 'dlsite':
+                            continue
+                        elif service == 'dlsite':
+                            continue
                         else:
                             logger.log(import_id, f'Service "{service}" unsupported.')
                             delete_keys([key])
@@ -114,5 +124,5 @@ def watch(queue_limit=config.pubsub_queue_limit):
                     except KeyError:
                         logger.log(import_id, 'Exception occured while starting import due to missing data in payload.', 'exception', to_client=True)
                         delete_keys([key])
-        
+
         time.sleep(1)
