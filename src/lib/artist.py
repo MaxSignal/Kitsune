@@ -136,13 +136,16 @@ def index_artists():
                     "service": "patreon"
                 }
             elif post["service"] == 'fanbox':
-                user = requests.get('https://api.fanbox.cc/creator.get?userId=' +
-                                    post["user"], proxies=get_proxy(), headers={"origin": "https://fanbox.cc"}).json()
-                model = {
-                    "id": post["user"],
-                    "name": user["body"]["creatorId"],
-                    "service": "fanbox"
-                }
+                user = requests.get(
+                    'https://api.fanbox.cc/creator.get?userId=' + post["user"],
+                    headers=dict(origin='https://fanbox.cc', referer='https://fanbox.cc'),
+                    proxies=get_proxy()
+                ).json()
+                model = dict(
+                    id=post['user'],
+                    name=user['body']['user']['name'],
+                    service='fanbox'
+                )
             elif post["service"] == 'gumroad':
                 scraper = cloudscraper.create_scraper()
                 resp = scraper.get('https://gumroad.com/' + post["user"], proxies=get_proxy()).text
