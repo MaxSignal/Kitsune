@@ -6,7 +6,7 @@ from ..lib.post import post_flagged, post_exists, delete_post_flags, move_to_bac
 from ..lib.artist import index_artists, is_artist_dnp, update_artist, delete_artist_cache_keys, get_all_artist_post_ids, get_all_artist_flagged_post_ids, get_all_dnp
 from ..internals.utils.logger import log
 from ..internals.database.database import get_conn, get_raw_conn, return_conn
-from ..internals.cache.redis import delete_keys
+from ..internals.cache.redis import delete_keys, get_redis
 from setproctitle import setthreadtitle
 from bs4 import BeautifulSoup
 from os.path import join
@@ -275,7 +275,21 @@ def get_paid_fanclubs(import_id, jar):
     return set(fanclub_link["href"].lstrip("/fanclubs/") for fanclub_link in soup.select("div.mb-5-children > div:nth-of-type(1) a[href^=\"/fanclubs\"]"))
 
 
-def import_posts(import_id, key, contributor_id, allowed_to_auto_import, key_id):
+def import_posts(import_id, key, contributor_id, allowed_to_auto_import, key_id):  # noqa: C901
+    r = get_redis()
+    data = json.loads(r.get(f'imports:{import_id}'))
+
+    def update_state(key=None, value=None):
+        if key is not None and value is not None:
+            data[key] = value
+        r.set(f'imports:{import_id}', json.dumps(data, default=str))
+
+    def push_state(key=None, value=None, allow_dupes=False):
+        if key is not None and value is not None:
+            if value not in data.get(key, []) or allow_dupes:
+                data[key] = data.get(key, []) + [value]
+        update_state()
+
     setthreadtitle(f'KI{import_id}')
     jar = requests.cookies.RequestsCookieJar()
     jar.set('_session_id', key)
@@ -298,6 +312,9 @@ def import_posts(import_id, key, contributor_id, allowed_to_auto_import, key_id)
 
     if len(fanclub_ids) > 0:
         for fanclub_id in fanclub_ids:
+            # Push logging data.
+            push_state('artists', fanclub_id)
+            # Begin importing.
             log(import_id, f'Importing fanclub {fanclub_id}', to_client=True)
             import_fanclub(fanclub_id, import_id, jar)
     else:

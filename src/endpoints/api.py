@@ -76,7 +76,7 @@ def import_api():
     import_id = get_import_id(key)
     service = request.form.get('service')
     allowed_to_auto_import = request.form.get('auto_import', False)
-    allowed_to_save_session = request.form.get('save_session_key', False)
+    # allowed_to_save_session = request.form.get('save_session_key', False)
     allowed_to_scrape_dms = request.form.get('save_dms', False)
     channel_ids = request.form.get('channel_ids')
     contributor_id = request.form.get('contributor_id')
@@ -84,8 +84,8 @@ def import_api():
     if not key:
         return "", 401
 
-    if key and service and allowed_to_save_session:
-        encrypt_and_log_session(import_id, service, key)
+    # if key and service and allowed_to_save_session:
+    #     encrypt_and_log_session(import_id, service, key)
 
     target = None
     args = None

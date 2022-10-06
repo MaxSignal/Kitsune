@@ -7,7 +7,7 @@ from ..lib.autoimport import encrypt_and_save_session_for_auto_import, kill_key
 from ..lib.post import post_flagged, post_exists, delete_post_flags, move_to_backup, delete_backup, restore_from_backup, comment_exists, get_comments_for_posts, get_comment_ids_for_user, handle_post_import
 from ..lib.artist import index_artists, is_artist_dnp, update_artist, delete_artist_cache_keys, delete_comment_cache_keys, get_all_artist_post_ids, get_all_artist_flagged_post_ids, get_all_dnp
 from ..internals.database.database import get_conn, get_raw_conn, return_conn
-from ..internals.cache.redis import delete_keys
+from ..internals.cache.redis import delete_keys, get_redis
 from flask import current_app
 from setproctitle import setthreadtitle
 import json
@@ -294,7 +294,7 @@ def import_posts_via_id(import_id, key, campaign_id, contributor_id=None, allowe
                     )
                     post = scraper.json()['body']
                     scraper.raise_for_status()
-                except requests.HTTPError as e:
+                except requests.HTTPError:
                     log(import_id, f'HTTP error when contacting Fanbox API ({url}). Stopping import.', 'exception')
 
                 parsed_post = FanboxPost(post_id, None, post)
@@ -472,6 +472,20 @@ def import_posts_via_id(import_id, key, campaign_id, contributor_id=None, allowe
 
 
 def import_posts(import_id, key, contributor_id=None, allowed_to_auto_import=None, key_id=None):
+    r = get_redis()
+    data = json.loads(r.get(f'imports:{import_id}'))
+
+    def update_state(key=None, value=None):
+        if key is not None and value is not None:
+            data[key] = value
+        r.set(f'imports:{import_id}', json.dumps(data, default=str))
+
+    def push_state(key=None, value=None, allow_dupes=False):
+        if key is not None and value is not None:
+            if value not in data.get(key, []) or allow_dupes:
+                data[key] = data.get(key, []) + [value]
+        update_state()
+
     get_newsletters(import_id, key)
     # this block creates a list of campaign ids of both supported and canceled subscriptions within the month
     subscribed_ids = get_subscribed_ids(import_id, key)
@@ -486,6 +500,9 @@ def import_posts(import_id, key, contributor_id=None, allowed_to_auto_import=Non
     # this block uses the list of ids to import posts
     if len(campaign_ids) > 0:
         for campaign_id in campaign_ids:
+            # Push logging data.
+            push_state('artists', campaign_id)
+            # Begin importing.
             import_posts_via_id(import_id, key, campaign_id, contributor_id=contributor_id, allowed_to_auto_import=allowed_to_auto_import, key_id=key_id)
             log(import_id, f'Finished processing user {campaign_id}')
         log(import_id, 'Finished scanning for posts')

@@ -73,7 +73,7 @@ def watch(queue_limit=config.pubsub_queue_limit):  # noqa: C901
 
                         if service_key and service and allowed_to_save_session:
                             try:
-                                encrypt_and_log_session(import_id, service, service_key)
+                                encrypt_and_log_session(import_id, key_data)
                             except:
                                 logger.log(import_id, 'Exception occured while logging session.', 'exception', to_client=False)
 
