@@ -10,26 +10,32 @@ import config
 import tempfile
 import os
 import magic
-import re
 import pathlib
 import datetime
+import sysrsync
 from PIL import Image
+from retry import retry
 from os import rename, makedirs, remove
 from os.path import join, getsize, exists, splitext, basename, dirname
 from .proxy import get_proxy
 from .utils import get_hash_of_file
-from ...lib.files import write_file_log
+from ...lib.files import write_file_log, file_exists
 
-non_url_safe = ['"', '#', '$', '%', '&', '+',
+non_url_safe = [
+    '"', '#', '$', '%', '&', '+',
     ',', '/', ':', ';', '=', '?',
     '@', '[', '\\', ']', '^', '`',
-    '{', '|', '}', '~', "'"]
+    '{', '|', '}', '~', "'"
+]
+
 
 class DuplicateException(Exception):
     pass
 
+
 class DownloaderException(Exception):
     pass
+
 
 def uniquify(path):
     filename, extension = splitext(path)
@@ -40,6 +46,7 @@ def uniquify(path):
         counter += 1
 
     return basename(path)
+
 
 def get_filename_from_cd(cd):
     if not cd:
@@ -57,6 +64,7 @@ def get_filename_from_cd(cd):
     # clean space and double quotes
     return fname.strip().strip('"')
 
+
 def slugify(text):
     """
     Turn the text content of a header into a slug for use in an ID
@@ -69,13 +77,25 @@ def slugify(text):
     text = u'_'.join(text.split())
     return text
 
-def download_branding(ddir, url, name = None, **kwargs):
+
+@retry(sysrsync.exceptions.RsyncError, tries=10, delay=2, backoff=2.0)
+def perform_copy(src, dst, rsync=None, options=[]):
+    return sysrsync.run(
+        private_key=config.rsync_private_key_location if rsync else None,
+        destination_ssh=rsync,
+        options=options,
+        destination=dst,
+        source=src
+    )
+
+
+def download_branding(ddir, url, name=None, **kwargs):
     temp_name = str(uuid.uuid4()) + '.temp'
     tries = 10
     makedirs(ddir, exist_ok=True)
     for i in range(tries):
         try:
-            r = requests.get(url, stream = True, proxies=get_proxy(), **kwargs)
+            r = requests.get(url, stream=True, proxies=get_proxy(), **kwargs)
             r.raw.read = functools.partial(r.raw.read, decode_content=True)
             r.raise_for_status()
             # Should retry on connection error
@@ -98,19 +118,25 @@ def download_branding(ddir, url, name = None, **kwargs):
                     raise DownloaderException(f'Downloaded size is less than reported; {downloaded_size} < {reported_size}')
 
                 file.close()
-                rename(join(ddir, temp_name), join(ddir, filename))
-                
+                perform_copy(
+                    join(ddir, temp_name),
+                    join(ddir, filename),
+                    rsync=config.rsync_branding_host,
+                    options=config.rsync_branding_options
+                )
+
                 make_thumbnail(join(ddir, filename))
 
                 return filename, r
         except requests.HTTPError as e:
             raise e
         except:
-            if i < tries - 1: # i is zero indexed
+            if i < tries - 1:  # i is zero indexed
                 continue
             else:
                 raise
         break
+
 
 def download_file(
     url: str,
@@ -126,8 +152,7 @@ def download_file(
     **kwargs
 ):
     proxies = None
-    makedirs(join(config.download_path, 'data', 'tmp'), exist_ok=True)
-    temp_dir = tempfile.mkdtemp(dir=join(config.download_path, 'data', 'tmp'))
+    temp_dir = tempfile.mkdtemp()
     temp_name = str(uuid.uuid4()) + '.temp'
     tries = 10
 
@@ -151,13 +176,13 @@ def download_file(
             mime = magic.from_file(join(temp_dir, temp_name), mime=True)
             extension = re.sub('^.jpe$', '.jpg', mimetypes.guess_extension(mime or reported_mime or 'application/octet-stream', strict=False) or '.bin')
             reported_filename = name or r.headers.get('x-amz-meta-original-filename') or get_filename_from_cd(r.headers.get('content-disposition')) or (str(uuid.uuid4()) + extension)
-            
+
             # content integrity
             if r.headers.get('content-length') and r.raw.tell() < int(r.headers.get('content-length')):
                 reported_size = r.raw.tell()
                 downloaded_size = r.headers.get('content-length')
                 raise DownloaderException(f'Downloaded size is less than reported; {downloaded_size} < {reported_size}')
-            
+
             # generate hashy filename
             # this will be the one we actually save the file with
             file_hash = get_hash_of_file(join(temp_dir, temp_name))
@@ -185,23 +210,24 @@ def download_file(
                 discord_message_id=discord_message_id
             )
 
-            if (exists(join(config.download_path, 'data', hash_filename))):
-                shutil.rmtree(temp_dir, ignore_errors=True)
-                return reported_filename, '/' + hash_filename, r
-                
-            makedirs(join(config.download_path, 'data', file_hash[0:2], file_hash[2:4]), exist_ok=True)
-            rename(join(temp_dir, temp_name), join(config.download_path, 'data', hash_filename))
+            perform_copy(
+                join(temp_dir, temp_name),
+                join(config.data_download_path, 'data', hash_filename),
+                rsync=config.rsync_data_host,
+                options=config.rsync_data_options
+            )
             shutil.rmtree(temp_dir, ignore_errors=True)
-            make_thumbnail(join(config.download_path, 'data', hash_filename))
+            make_thumbnail(join(config.data_download_path, 'data', hash_filename))
             return reported_filename, '/' + hash_filename, r
         except requests.HTTPError as e:
             raise e
         except:
-            if i < tries - 1: # i is zero indexed
+            if i < tries - 1:  # i is zero indexed
                 continue
             else:
                 raise
         break
+
 
 def make_thumbnail(path):
     try:

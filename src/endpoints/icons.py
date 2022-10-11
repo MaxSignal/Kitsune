@@ -17,7 +17,7 @@ from typing import TypedDict, Callable
 from threading import Thread
 
 icons = Blueprint('icons', __name__)
-icon_path = Path(config.download_path, 'icons')
+icon_path = Path(config.rsync_branding_host, 'icons')
 
 
 class ServiceDataType(IntEnum):

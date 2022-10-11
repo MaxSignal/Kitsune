@@ -15,7 +15,7 @@ from typing import TypedDict, Callable
 from threading import Thread
 
 banners = Blueprint('banners', __name__)
-banners_path = Path(config.download_path, 'banners')
+banners_path = Path(config.rsync_branding_host, 'banners')
 
 
 class ServiceDataType(IntEnum):

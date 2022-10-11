@@ -1,5 +1,15 @@
 from ..internals.database.database import get_raw_conn, return_conn, get_cursor
 from datetime import datetime
+
+
+def file_exists(fhash: str) -> bool:
+    conn = get_raw_conn()
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM files WHERE hash = %s', (fhash,))
+    results = cursor.fetchall()
+    return len(results)
+
+
 def write_file_log(
     fhash: str,
     mtime: datetime,
@@ -30,9 +40,9 @@ def write_file_log(
     else:
         cursor = conn.cursor()
         cursor.execute("INSERT INTO file_post_relationships (file_id, filename, service, \"user\", post, inline) VALUES (%s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING", (file_id, filename, service, user, post, inline))
-    
+
     cursor = conn.cursor()
     cursor.execute("INSERT INTO file_server_relationships (file_id, remote_path) VALUES (%s, %s)", (file_id, remote_path))
-    
+
     conn.commit()
     return_conn(conn)

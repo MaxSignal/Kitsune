@@ -5,6 +5,8 @@ RUN apt-get update \
 		libev-dev \
         libpq-dev \
         curl \
+        rsync \
+        ssh \
         libmagic1 \
     && pip3 install uwsgi
 
