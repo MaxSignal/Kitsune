@@ -165,26 +165,13 @@ def get_base_paths(service_name, user_id, post_id):
         return {'file': f"files/fantia/{user_id}/{post_id}", 'attachments': f"attachments/fantia/{user_id}/{post_id}"}
 
 
-# TODO: Solve a possible race condition: thread A created dir, but thread B moved it afterwards
 def move_to_backup(service_name, user_id, post_id):
-    base_paths = get_base_paths(service_name, user_id, post_id)
-    backup_path = tempfile.mkdtemp()
-    if exists(join(config.download_path, base_paths['file'])):
-        shutil.move(join(config.download_path, base_paths['file']), join(backup_path, 'file'))
-    if exists(join(config.download_path, base_paths['attachments'])):
-        shutil.move(join(config.download_path, base_paths['attachments']), join(backup_path, 'attachments'))
-    return backup_path
+    pass
 
 
 def delete_backup(backup_path):
-    shutil.rmtree(backup_path, ignore_errors=True)
+    pass
 
 
 def restore_from_backup(service_name, user_id, post_id, backup_path):
-    base_paths = get_base_paths(service_name, user_id, post_id)
-    shutil.rmtree(join(config.download_path, base_paths['file']), ignore_errors=True)
-    if exists(join(backup_path, 'file')):
-        os.rename(join(backup_path, 'file'), join(config.download_path, base_paths['file']))
-    shutil.rmtree(join(config.download_path, base_paths['attachments']), ignore_errors=True)
-    if exists(join(backup_path, 'attachments')):
-        os.rename(join(backup_path, 'attachments'), join(config.download_path, base_paths['attachments']))
+    pass

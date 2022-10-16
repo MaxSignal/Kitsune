@@ -123,17 +123,6 @@ def get_logs(import_id):
     return json.dumps(logs), 200
 
 
-@api.route('/api/upload/<path:path>', methods=['POST'])
-def upload_file(path):
-    if 'file' not in request.files:
-        return 'No file', 400
-    uploaded_file = request.files['file']
-    os.makedirs(os.path.join(config.download_path, path), exist_ok=True)
-    filename = uniquify(os.path.join(config.download_path, path, secure_filename(uploaded_file.filename)))
-    uploaded_file.save(os.path.join(config.download_path, path, filename))
-    return os.path.join('/', path, filename), 200
-
-
 @api.route('/api/active_imports', methods=['GET'])
 def get_thread_count():
     return str(threading.active_count()), 200

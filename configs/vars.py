@@ -9,7 +9,7 @@ import os
 import config
 
 flask_env = os.getenv('FLASK_ENV', 'development')
-download_path = config.download_path or '/storage'
+download_path = '/storage'  # Deprecated!!!
 webserver_port = os.getenv('WEBSERVER_PORT', '80')
 pg_user = config.database_user
 pg_password = config.database_password

@@ -1,4 +1,25 @@
-download_path = '/storage'
+rsync_private_key_location = None
+thumbnail_download_path = '~/thumbnail.testdir'
+branding_download_path = '~/branding.testdir'
+data_download_path = '~/data.testdir'
+rsync_thumbnail_host = None
+rsync_branding_host = None
+rsync_data_host = None
+rsync_branding_options = [
+    '--mkpath',
+    '--size-only',
+    '--ignore-existing'
+]
+rsync_thumbnail_options = [
+    '--mkpath',
+    '--size-only',
+    '--ignore-existing'
+]
+rsync_data_options = [
+    '--mkpath',
+    '--size-only',
+    '--ignore-existing'
+]
 
 # database info
 database_host = 'localhost'

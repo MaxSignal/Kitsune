@@ -1,25 +1,26 @@
 import mimetypes
+import functools
+import sysrsync
 import requests
+import datetime
+import tempfile
+import pathlib
+import shutil
+import urllib
+import config
+import magic
 import uuid
 import cgi
 import re
-import shutil
-import functools
-import urllib
-import config
-import tempfile
 import os
-import magic
-import pathlib
-import datetime
-import sysrsync
-from PIL import Image
-from retry import retry
-from os import rename, makedirs, remove
+
 from os.path import join, getsize, exists, splitext, basename, dirname
-from .proxy import get_proxy
-from .utils import get_hash_of_file
 from ...lib.files import write_file_log, file_exists
+from os import rename, makedirs, remove
+from .utils import get_hash_of_file
+from .proxy import get_proxy
+from retry import retry
+from PIL import Image
 
 non_url_safe = [
     '"', '#', '$', '%', '&', '+',
@@ -125,7 +126,7 @@ def download_branding(ddir, url, name=None, **kwargs):
                     options=config.rsync_branding_options
                 )
 
-                make_thumbnail(join(ddir, filename))
+                make_thumbnail(join(ddir, temp_name))
 
                 return filename, r
         except requests.HTTPError as e:
@@ -216,8 +217,8 @@ def download_file(
                 rsync=config.rsync_data_host,
                 options=config.rsync_data_options
             )
+            make_thumbnail(join(temp_dir, temp_name), hash_filename)
             shutil.rmtree(temp_dir, ignore_errors=True)
-            make_thumbnail(join(config.data_download_path, 'data', hash_filename))
             return reported_filename, '/' + hash_filename, r
         except requests.HTTPError as e:
             raise e
@@ -229,12 +230,21 @@ def download_file(
         break
 
 
-def make_thumbnail(path):
+def make_thumbnail(fpath, path):
+    temp_dir = tempfile.mkdtemp()
+    temp_name = str(uuid.uuid4()) + '.temp'
     try:
-        image = Image.open(path)
+        image = Image.open(fpath)
         image = image.convert('RGB')
         image.thumbnail((800, 800))
-        makedirs(dirname(join(config.download_path, 'thumbnail' + path.replace(config.download_path, ''))), exist_ok=True)
-        image.save(join(config.download_path, 'thumbnail' + path.replace(config.download_path, '')), 'JPEG', quality=60)
+        image.save(join(temp_dir, temp_name), 'JPEG', quality=60)
+        perform_copy(
+            join(temp_dir, temp_name),
+            join(config.thumbnail_download_path, 'thumbnail', path),
+            rsync=config.rsync_thumbnail_host,
+            options=config.rsync_thumbnail_options
+        )
     except:
         pass
+    finally:
+        shutil.rmtree(temp_dir, ignore_errors=True)
