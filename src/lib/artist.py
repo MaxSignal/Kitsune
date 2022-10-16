@@ -98,7 +98,14 @@ def dm_exists(service, artist_id, dm_id, content):
 def is_artist_dnp(service, artist_id):
     conn = get_raw_conn()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM dnp WHERE id = %s AND service = %s", (artist_id, service,))
+    cursor.execute("""
+        SELECT *
+        FROM dnp
+        WHERE
+            id = %s
+            AND service = %s
+            AND import = false;
+    """, (artist_id, service,))
     results = cursor.fetchall()
     cursor.close()
     return_conn(conn)
