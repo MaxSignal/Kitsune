@@ -126,7 +126,7 @@ def download_branding(ddir, url, name=None, **kwargs):
                     options=config.rsync_branding_options
                 )
 
-                make_thumbnail(join(ddir, temp_name))
+                make_thumbnail(join(ddir, temp_name), join(ddir, filename))
 
                 return filename, r
         except requests.HTTPError as e:
@@ -217,7 +217,7 @@ def download_file(
                 rsync=config.rsync_data_host,
                 options=config.rsync_data_options
             )
-            make_thumbnail(join(temp_dir, temp_name), hash_filename)
+            make_thumbnail(join(temp_dir, temp_name), join('data', hash_filename))
             shutil.rmtree(temp_dir, ignore_errors=True)
             return reported_filename, '/' + hash_filename, r
         except requests.HTTPError as e:
