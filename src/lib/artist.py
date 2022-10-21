@@ -112,7 +112,7 @@ def is_artist_dnp(service, artist_id):
     return len(results) > 0
 
 
-def index_artists():
+def index_artists():  # noqa: C901
     conn = get_raw_conn()
     cursor = conn.cursor()
     query = """
@@ -192,6 +192,12 @@ def index_artists():
                     "service": "dlsite"
                 }
             # @REVIEW: this doesn't do any requests
+            elif post["service"] == 'boosty':
+                model = {
+                    "id": post["user"],
+                    "name": post["user"],
+                    "service": "boosty"
+                }
             elif post["service"] == 'onlyfans':
                 model = {
                     "id": post["user"],
