@@ -21,6 +21,9 @@ rsync_data_options = [
     '--ignore-existing'
 ]
 
+# sentry information
+sentry_dsn = None
+
 # database info
 database_host = 'localhost'
 database_dbname = 'kemonodb'

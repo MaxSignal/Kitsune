@@ -8,6 +8,15 @@ from threading import Thread
 import logging
 import config
 
+import sentry_sdk
+from sentry_sdk.integrations.flask import FlaskIntegration
+from sentry_sdk.integrations.redis import RedisIntegration
+
+if config.sentry_dsn:
+    sentry_sdk.init(
+        dsn=config.sentry_dsn,
+        integrations=[FlaskIntegration(), RedisIntegration()]
+    )
 
 logging.basicConfig(filename='kemono_importer.log', level=logging.DEBUG)
 logging.getLogger('requests').setLevel(logging.WARNING)
