@@ -4,7 +4,7 @@ from ..internals.utils.utils import get_import_id
 from ..internals.utils.download import download_file, DownloaderException
 from ..internals.utils.proxy import get_proxy
 from ..lib.autoimport import encrypt_and_save_session_for_auto_import, kill_key
-from ..lib.post import post_flagged, post_exists, delete_post_flags, move_to_backup, delete_backup, restore_from_backup, comment_exists, get_comments_for_posts, get_comment_ids_for_user, handle_post_import
+from ..lib.post import post_exists, delete_post_flags, move_to_backup, delete_backup, restore_from_backup, comment_exists, get_comments_for_posts, get_comment_ids_for_user, handle_post_import, get_post
 from ..lib.artist import index_artists, is_artist_dnp, update_artist, delete_artist_cache_keys, delete_comment_cache_keys, get_all_artist_post_ids, get_all_artist_flagged_post_ids, get_all_dnp
 from ..internals.database.database import get_conn, get_raw_conn, return_conn
 from ..internals.cache.redis import delete_keys, get_redis
@@ -276,6 +276,7 @@ def import_posts_via_id(import_id, key, campaign_id, contributor_id=None, allowe
     wasCampaignUpdated = False
     dnp = get_all_dnp()
     post_ids_of_users = {}
+    added_times_of_users = {}
     flagged_post_ids_of_users = {}
     comment_ids_of_users = {}
     if scraper_data.get('body'):
@@ -311,13 +312,29 @@ def import_posts_via_id(import_id, key, campaign_id, contributor_id=None, allowe
                     import_comments(key, post_id, user_id, import_id, comment_ids_of_users[user_id])
 
                     # existence checking
-                    if not post_ids_of_users.get(user_id):
-                        post_ids_of_users[user_id] = get_all_artist_post_ids('fanbox', user_id)
+                    if post_ids_of_users.get(user_id) is None or not added_times_of_users.get(user_id) is None:
+                        added_times_of_users[user_id] = {}
+                        post_ids_of_users[user_id] = []
+                        for artist_post in get_all_artist_post_ids('fanbox', user_id, ['id', 'added']):
+                            added_times_of_users[user_id][artist_post['id']] = artist_post['added']
+                            post_ids_of_users[user_id] += [artist_post['id']]
                     if not flagged_post_ids_of_users.get(user_id):
                         flagged_post_ids_of_users[user_id] = get_all_artist_flagged_post_ids('fanbox', user_id)
-                    if len(list(filter(lambda post: post['id'] == post_id, post_ids_of_users[user_id]))) > 0 and len(list(filter(lambda flag: flag['id'] == post_id, flagged_post_ids_of_users[user_id]))) == 0:
-                        log(import_id, f'Skipping post {post_id} from user {user_id} because already exists', to_client=True)
-                        continue
+                    # A post is already present in the database. Should it be skipped?
+                    if list(filter(lambda _post_id: _post_id == post_id, post_ids_of_users[user_id])):
+                        post_flagged = list(filter(
+                            lambda flag: flag['id'] == post_id,
+                            flagged_post_ids_of_users[user_id]
+                        ))
+                        existing_post_added_time = added_times_of_users[user_id][post_id].timestamp()
+                        post_updated = parsed_post.updatedDateDatetime.timestamp() > existing_post_added_time
+                        if not post_flagged and not post_updated:
+                            log(
+                                import_id,
+                                f'Skipping post {post_id} from user {user_id} because already exists',
+                                to_client=True
+                            )
+                            continue
 
                     log(import_id, f"Starting import: {post_id} from user {user_id}")
 
