@@ -24,6 +24,34 @@ sys.path.append('./PixivUtil2')
 from PixivUtil2.PixivModelFanbox import FanboxArtist, FanboxPost  # noqa: E402
 
 
+def import_embed(embed, user_id, post_id, import_id):
+    embed_id = embed['id']
+
+    log(import_id, f"Starting embed import: {embed_id} from post {post_id}", to_client=False)
+
+    model = {
+        'id': embed_id,
+        'user_id': user_id,
+        'post_id': post_id,
+        'type': embed['type'],
+        'json': json.dumps(embed)
+    }
+
+    columns = model.keys()
+    data = ['%s'] * len(model.values())
+    query = "INSERT INTO fanbox_embeds ({fields}) VALUES ({values}) ON CONFLICT DO NOTHING".format(
+        fields=','.join(columns),
+        values=','.join(data)
+    )
+    conn = get_raw_conn()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(query, list(model.values()))
+        conn.commit()
+    finally:
+        return_conn(conn)
+
+
 def import_comment(comment, user_id, post_id, import_id):
     commenter_id = comment['user']['userId']
     comment_id = comment['id']
@@ -403,6 +431,10 @@ def import_posts_via_id(import_id, key, campaign_id, contributor_id=None, allowe
                             <br>
                         """
                     }
+
+                    if post['body'].get('urlEmbedMap'):
+                        for embed in post['body']['urlEmbedMap'].values():
+                            import_embed(embed, user_id, post_id, import_id)
 
                     for i in range(len(parsed_post.embeddedFiles)):
                         if isinstance(parsed_post.embeddedFiles[i], dict):
