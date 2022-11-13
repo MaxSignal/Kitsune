@@ -150,6 +150,7 @@ def download_file(
     discord_message_server: str = '',
     discord_message_channel: str = '',
     discord_message_id: str = '',
+    fancard: bool = False,
     **kwargs
 ):
     proxies = None
@@ -208,7 +209,8 @@ def download_file(
                 discord=discord,
                 discord_message_server=discord_message_server,
                 discord_message_channel=discord_message_channel,
-                discord_message_id=discord_message_id
+                discord_message_id=discord_message_id,
+                fancard=fancard
             )
 
             perform_copy(

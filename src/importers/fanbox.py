@@ -181,6 +181,29 @@ def get_subscribed_ids(import_id, key, contributor_id=None, allowed_to_auto_impo
     return campaign_ids
 
 
+def download_fancard(key, user_id, import_id):
+    # Download fancards
+    fancard_url = 'https://api.fanbox.cc/legacy/support/creator?userId={}'.format(user_id)
+    try:
+        fancard_scraper = create_scrapper_session(useCloudscraper=False).get(
+            fancard_url,
+            cookies={'FANBOXSESSID': key},
+            headers={'origin': 'https://fanbox.cc'},
+            proxies=get_proxy()
+        )
+        fancard_scraper_data = fancard_scraper.json()
+        fancard_scraper.raise_for_status()
+        download_file(
+            fancard_scraper_data['body']['supporterCardImageUrl'],
+            None,
+            user_id,
+            None,
+            fancard=True
+        )
+    except:
+        log(import_id, f'Error downloading fancard for user {user_id}', 'exception')
+
+
 def get_newsletters(import_id, key, url='https://api.fanbox.cc/newsletter.list'):
     try:
         scraper = create_scrapper_session().get(
@@ -275,7 +298,14 @@ def get_cancelled_ids(import_id, key, url='https://api.fanbox.cc/payment.listPai
 # now it uses a different url specific to a single creator instead of api.fanbox.cc/post.listSupporting.
 
 
-def import_posts_via_id(import_id, key, campaign_id, contributor_id=None, allowed_to_auto_import=None, key_id=None):  # noqa: C901
+def import_posts_via_id(  # noqa: C901
+    import_id,
+    key,
+    campaign_id,
+    contributor_id=None,
+    allowed_to_auto_import=None,
+    key_id=None
+):
     url = 'https://api.fanbox.cc/post.listCreator?userId={}&limit=50'.format(campaign_id)
     try:
         scraper = create_scrapper_session(useCloudscraper=False).get(
@@ -299,6 +329,9 @@ def import_posts_via_id(import_id, key, campaign_id, contributor_id=None, allowe
             log(import_id, "Your key was successfully enrolled in auto-import!", to_client=True)
         except:
             log(import_id, "An error occured while saving your key for auto-import.", 'exception')
+
+    # Download fancards
+    download_fancard(key, campaign_id, import_id)
 
     user_id = None
     wasCampaignUpdated = False

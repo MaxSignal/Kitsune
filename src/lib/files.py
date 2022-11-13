@@ -10,6 +10,14 @@ def file_exists(fhash: str) -> bool:
     return len(results)
 
 
+def write_fancard(
+    fhash: str,
+    fanbox_user,
+
+):
+    pass
+
+
 def write_file_log(
     fhash: str,
     mtime: datetime,
@@ -27,6 +35,7 @@ def write_file_log(
     discord_message_server: str = '',
     discord_message_channel: str = '',
     discord_message_id: str = '',
+    fancard: bool = False
 ):
     conn = get_raw_conn()
 
@@ -37,6 +46,13 @@ def write_file_log(
     if (discord):
         cursor = conn.cursor()
         cursor.execute("INSERT INTO file_discord_message_relationships (file_id, filename, server, channel, id) VALUES (%s, %s, %s, %s, %s) ON CONFLICT DO NOTHING", (file_id, filename, discord_message_server, discord_message_channel, discord_message_id))
+    elif (fancard):
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO fanbox_fancards (file_id, user_id)
+            VALUES (%s, %s)
+            ON CONFLICT DO NOTHING
+        """, (file_id, user))
     else:
         cursor = conn.cursor()
         cursor.execute("INSERT INTO file_post_relationships (file_id, filename, service, \"user\", post, inline) VALUES (%s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING", (file_id, filename, service, user, post, inline))
