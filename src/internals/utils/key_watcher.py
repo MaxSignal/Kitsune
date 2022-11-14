@@ -68,7 +68,7 @@ def watch(queue_limit=config.pubsub_queue_limit):  # noqa: C901
                         allowed_to_auto_import = key_data.get('auto_import', False)
                         allowed_to_save_session = key_data.get('save_session_key', False)
                         # allowed_to_scrape_dms = key_data.get('save_dms', False)
-                        # channel_ids = key_data.get('channel_ids')
+                        channel_ids = key_data.get('channel_ids')
                         contributor_id = key_data.get('contributor_id')
 
                         if service_key and service and allowed_to_save_session:
@@ -99,11 +99,16 @@ def watch(queue_limit=config.pubsub_queue_limit):  # noqa: C901
                             target = onlyfans.import_posts
                             args = (service_key, contributor_id, allowed_to_auto_import, key_id)
                         elif service == 'discord':
-                            # target = discord.import_posts
-                            # if channel_ids is None:
-                            #     channel_ids = ''
-                            # args = (service_key, channel_ids.strip().replace(" ", ""), contributor_id, allowed_to_auto_import, key_id)
-                            continue
+                            target = discord.import_posts
+                            if channel_ids is None:
+                                channel_ids = ''
+                            args = (
+                                service_key,
+                                channel_ids.strip().replace(" ", ""),
+                                contributor_id,
+                                allowed_to_auto_import,
+                                key_id
+                            )
                         elif service == 'dlsite':
                             continue
                         elif service == 'dlsite':
