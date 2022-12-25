@@ -23,13 +23,13 @@ sys.setrecursionlimit(100000)
 # https://fantia.jp/api/v1/me/fanclubs',
 
 
-def enable_adult_mode(import_id, jar):
+def enable_adult_mode(import_id, jar, proxies):
     # log(import_id, f"No active Fantia subscriptions or invalid key. No posts will be imported.", to_client = True)
     scraper = create_scrapper_session(useCloudscraper=False).get(
         'https://fantia.jp/mypage/account/edit',
         headers={'user-agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) discord/0.0.305 Chrome/69.0.3497.128 Electron/4.0.8 Safari/537.36'},
-        cookies=jar,
-        proxies=get_proxy()
+        proxies=proxies,
+        cookies=jar
     )
     scraper_data = scraper.text
     scraper.raise_for_status()
@@ -43,8 +43,8 @@ def enable_adult_mode(import_id, jar):
         create_scrapper_session(useCloudscraper=False).post(
             'https://fantia.jp/mypage/users/update_rating',
             headers={'user-agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) discord/0.0.305 Chrome/69.0.3497.128 Electron/4.0.8 Safari/537.36'},
+            proxies=proxies,
             cookies=jar,
-            proxies=get_proxy(),
             data={
                 "utf8": '✓',
                 "authenticity_token": authenticity_token,
@@ -56,11 +56,11 @@ def enable_adult_mode(import_id, jar):
     return False
 
 
-def disable_adult_mode(import_id, jar):
+def disable_adult_mode(import_id, jar, proxies):
     scraper = create_scrapper_session(useCloudscraper=False).get(
         'https://fantia.jp/mypage/account/edit',
-        cookies=jar,
-        proxies=get_proxy()
+        proxies=proxies,
+        cookies=jar
     )
     scraper_data = scraper.text
     scraper.raise_for_status()
@@ -69,8 +69,8 @@ def disable_adult_mode(import_id, jar):
     create_scrapper_session(useCloudscraper=False).post(
         'https://fantia.jp/mypage/users/update_rating',
         headers={'user-agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) discord/0.0.305 Chrome/69.0.3497.128 Electron/4.0.8 Safari/537.36'},
+        proxies=proxies,
         cookies=jar,
-        proxies=get_proxy(),
         data={
             "utf8": '✓',
             "authenticity_token": authenticity_token,
@@ -80,13 +80,13 @@ def disable_adult_mode(import_id, jar):
     ).raise_for_status()
 
 
-def import_fanclub(fanclub_id, import_id, jar, page=1):  # noqa: C901
+def import_fanclub(fanclub_id, import_id, jar, proxies, page=1):  # noqa: C901
     try:
         scraper = create_scrapper_session(useCloudscraper=False).get(
             f"https://fantia.jp/fanclubs/{fanclub_id}/posts?page={page}",
             headers={'user-agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) discord/0.0.305 Chrome/69.0.3497.128 Electron/4.0.8 Safari/537.36'},
-            cookies=jar,
-            proxies=get_proxy()
+            proxies=proxies,
+            cookies=jar
         )
         scraper_data = scraper.text
         scraper.raise_for_status()
@@ -123,8 +123,8 @@ def import_fanclub(fanclub_id, import_id, jar, page=1):  # noqa: C901
                     post_scraper = create_scrapper_session(useCloudscraper=False).get(
                         f"https://fantia.jp/api/v1/posts/{post_id}",
                         headers={'user-agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) discord/0.0.305 Chrome/69.0.3497.128 Electron/4.0.8 Safari/537.36'},
+                        proxies=proxies,
                         cookies=jar,
-                        proxies=get_proxy()
                     )
                     post_data = post_scraper.json()
                     post_scraper.raise_for_status()
@@ -246,8 +246,8 @@ def import_fanclub(fanclub_id, import_id, jar, page=1):  # noqa: C901
                 scraper = create_scrapper_session(useCloudscraper=False).get(
                     f"https://fantia.jp/fanclubs/{fanclub_id}/posts?page={page}",
                     headers={'user-agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) discord/0.0.305 Chrome/69.0.3497.128 Electron/4.0.8 Safari/537.36'},
-                    cookies=jar,
-                    proxies=get_proxy()
+                    proxies=proxies,
+                    cookies=jar
                 )
                 scraper_data = scraper.text
                 scraper.raise_for_status()
@@ -262,12 +262,12 @@ def import_fanclub(fanclub_id, import_id, jar, page=1):  # noqa: C901
             return
 
 
-def get_paid_fanclubs(import_id, jar):
+def get_paid_fanclubs(import_id, jar, proxies):
     scraper = create_scrapper_session(useCloudscraper=False).get(
         'https://fantia.jp/mypage/users/plans?type=not_free',
         headers={'user-agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) discord/0.0.305 Chrome/69.0.3497.128 Electron/4.0.8 Safari/537.36'},
-        cookies=jar,
-        proxies=get_proxy()
+        proxies=proxies,
+        cookies=jar
     )
     scraper_data = scraper.text
     scraper.raise_for_status()
@@ -294,9 +294,13 @@ def import_posts(import_id, key, contributor_id, allowed_to_auto_import, key_id)
     jar = requests.cookies.RequestsCookieJar()
     jar.set('_session_id', key)
 
+    proxies = get_proxy()
+    if proxies:
+        cookies = dict(create_scrapper_session(useCloudscraper=False).head(proxies['http']).cookies)
+        proxies['headers'] = {'Cookie': " ".join(f'{k}={v};' for (k, v) in cookies.items())}
     try:
-        mode_switched = enable_adult_mode(import_id, jar)
-        fanclub_ids = get_paid_fanclubs(import_id, jar)
+        mode_switched = enable_adult_mode(import_id, jar, proxies)
+        fanclub_ids = get_paid_fanclubs(import_id, jar, proxies)
     except:
         log(import_id, "Error occurred during preflight. Stopping import.", 'exception')
         if (key_id):
@@ -316,11 +320,11 @@ def import_posts(import_id, key, contributor_id, allowed_to_auto_import, key_id)
             push_state('artists', fanclub_id)
             # Begin importing.
             log(import_id, f'Importing fanclub {fanclub_id}', to_client=True)
-            import_fanclub(fanclub_id, import_id, jar)
+            import_fanclub(fanclub_id, import_id, jar, proxies)
     else:
         log(import_id, "No paid subscriptions found. No posts will be imported.", to_client=True)
 
     if (mode_switched):
-        disable_adult_mode(import_id, jar)
+        disable_adult_mode(import_id, jar, proxies)
 
     log(import_id, "Finished scanning for posts.")
