@@ -92,7 +92,7 @@ def import_comment(comment, user_id, post_id, import_id):
     delete_comment_cache_keys(post_model['service'], user_id, post_model['post_id'])
 
 
-def import_comments(key, post_id, user_id, import_id, existing_comment_ids):
+def import_comments(key, post_id, user_id, import_id, existing_comment_ids, proxies):
     url = f'https://api.fanbox.cc/post.listComments?postId={post_id}&limit=10'
 
     try:
@@ -100,7 +100,7 @@ def import_comments(key, post_id, user_id, import_id, existing_comment_ids):
             url,
             cookies={'FANBOXSESSID': key},
             headers={'origin': 'https://fanbox.cc'},
-            proxies=get_proxy()
+            proxies=proxies
         )
         scraper_data = scraper.json()
         scraper.raise_for_status()
@@ -129,7 +129,7 @@ def import_comments(key, post_id, user_id, import_id, existing_comment_ids):
                         next_url,
                         cookies={'FANBOXSESSID': key},
                         headers={'origin': 'https://fanbox.cc'},
-                        proxies=get_proxy()
+                        proxies=proxies
                     )
                     scraper_data = scraper.json()
                     scraper.raise_for_status()
@@ -142,14 +142,14 @@ def import_comments(key, post_id, user_id, import_id, existing_comment_ids):
 # gets the campaign ids for the creators currently supported
 
 
-def get_subscribed_ids(import_id, key, contributor_id=None, allowed_to_auto_import=None, key_id=None, url='https://api.fanbox.cc/post.listSupporting?limit=50'):
+def get_subscribed_ids(import_id, key, proxies, contributor_id=None, allowed_to_auto_import=None, key_id=None, url='https://api.fanbox.cc/post.listSupporting?limit=50'):
     setthreadtitle(f'KI{import_id}')
     try:
         scraper = create_scrapper_session(useCloudscraper=False).get(
             url,
             cookies={'FANBOXSESSID': key},
             headers={'origin': 'https://fanbox.cc'},
-            proxies=get_proxy()
+            proxies=proxies
         )
         scraper_data = scraper.json()
         scraper.raise_for_status()
@@ -181,7 +181,7 @@ def get_subscribed_ids(import_id, key, contributor_id=None, allowed_to_auto_impo
     return campaign_ids
 
 
-def download_fancard(key, user_id, import_id):
+def download_fancard(key, user_id, import_id, proxies):
     # Download fancards
     fancard_url = 'https://api.fanbox.cc/legacy/support/creator?userId={}'.format(user_id)
     try:
@@ -189,7 +189,7 @@ def download_fancard(key, user_id, import_id):
             fancard_url,
             cookies={'FANBOXSESSID': key},
             headers={'origin': 'https://fanbox.cc'},
-            proxies=get_proxy()
+            proxies=proxies
         )
         fancard_scraper_data = fancard_scraper.json()
         fancard_scraper.raise_for_status()
@@ -204,13 +204,13 @@ def download_fancard(key, user_id, import_id):
         log(import_id, f'Error downloading fancard for user {user_id}', 'exception')
 
 
-def get_newsletters(import_id, key, url='https://api.fanbox.cc/newsletter.list'):
+def get_newsletters(import_id, key, proxies, url='https://api.fanbox.cc/newsletter.list'):
     try:
         scraper = create_scrapper_session().get(
             url,
             cookies={'FANBOXSESSID': key},
             headers={'origin': 'https://www.fanbox.cc'},
-            proxies=get_proxy()
+            proxies=proxies
         )
         scraper_data = scraper.json()
         scraper.raise_for_status()
@@ -249,7 +249,7 @@ def get_newsletters(import_id, key, url='https://api.fanbox.cc/newsletter.list')
 
 
 # Retrieve ids of campaigns for which pledge has been cancelled but they've been paid for in this month.
-def get_cancelled_ids(import_id, key, url='https://api.fanbox.cc/payment.listPaid'):
+def get_cancelled_ids(import_id, key, proxies, url='https://api.fanbox.cc/payment.listPaid'):
     today_date = datetime.datetime.today()
 
     try:
@@ -257,7 +257,7 @@ def get_cancelled_ids(import_id, key, url='https://api.fanbox.cc/payment.listPai
             url,
             cookies={'FANBOXSESSID': key},
             headers={'origin': 'https://fanbox.cc'},
-            proxies=get_proxy()
+            proxies=proxies
         )
         scraper_data = scraper.json()
         scraper.raise_for_status()
@@ -302,6 +302,7 @@ def import_posts_via_id(  # noqa: C901
     import_id,
     key,
     campaign_id,
+    proxies,
     contributor_id=None,
     allowed_to_auto_import=None,
     key_id=None
@@ -312,7 +313,7 @@ def import_posts_via_id(  # noqa: C901
             url,
             cookies={'FANBOXSESSID': key},
             headers={'origin': 'https://fanbox.cc'},
-            proxies=get_proxy()
+            proxies=proxies
         )
         scraper_data = scraper.json()
         scraper.raise_for_status()
@@ -331,7 +332,7 @@ def import_posts_via_id(  # noqa: C901
             log(import_id, "An error occured while saving your key for auto-import.", 'exception')
 
     # Download fancards
-    download_fancard(key, campaign_id, import_id)
+    download_fancard(key, campaign_id, import_id, proxies)
 
     user_id = None
     wasCampaignUpdated = False
@@ -352,7 +353,7 @@ def import_posts_via_id(  # noqa: C901
                         url,
                         cookies={'FANBOXSESSID': key},
                         headers={'origin': 'https://fanbox.cc'},
-                        proxies=get_proxy()
+                        proxies=proxies
                     )
                     post = scraper.json()['body']
                     scraper.raise_for_status()
@@ -370,7 +371,11 @@ def import_posts_via_id(  # noqa: C901
 
                     if not comment_ids_of_users.get(user_id):
                         comment_ids_of_users[user_id] = get_comment_ids_for_user('fanbox', user_id)
-                    import_comments(key, post_id, user_id, import_id, comment_ids_of_users[user_id])
+                    import_comments(
+                        key, post_id, user_id, import_id,
+                        comment_ids_of_users[user_id],
+                        proxies
+                    )
 
                     # existence checking
                     if post_ids_of_users.get(user_id) is None or not added_times_of_users.get(user_id) is None:
@@ -506,7 +511,7 @@ def import_posts_via_id(  # noqa: C901
                     soup = BeautifulSoup(post_model['content'], 'html.parser')
                     for iframe in soup.select('iframe[src^="https://cdn.iframe.ly/"]'):
                         api_url = iframe['src'].split('?', maxsplit=1)[0] + '.json'
-                        api_response = create_scrapper_session(useCloudscraper=False).get(api_url, proxies=get_proxy())
+                        api_response = create_scrapper_session(useCloudscraper=False).get(api_url, proxies=proxies)
                         api_data = api_response.json()
                         iframe.parent.parent.replace_with(BeautifulSoup(f"""
                             <a href="{api_data['url']}" target="_blank">
@@ -537,7 +542,7 @@ def import_posts_via_id(  # noqa: C901
                         url,
                         cookies={'FANBOXSESSID': key},
                         headers={'origin': 'https://fanbox.cc'},
-                        proxies=get_proxy()
+                        proxies=proxies
                     )
                     scraper_data = scraper.json()
                     scraper.raise_for_status()
@@ -568,10 +573,15 @@ def import_posts(import_id, key, contributor_id=None, allowed_to_auto_import=Non
                 data[key] = data.get(key, []) + [value]
         update_state()
 
-    get_newsletters(import_id, key)
+    proxies = get_proxy()
+    if proxies:
+        cookies = dict(create_scrapper_session(useCloudscraper=False).head(proxies['http']).cookies)
+        proxies['headers'] = {'Cookie': " ".join(f'{k}={v};' for (k, v) in cookies.items())}
+
+    get_newsletters(import_id, key, proxies)
     # this block creates a list of campaign ids of both supported and canceled subscriptions within the month
-    subscribed_ids = get_subscribed_ids(import_id, key)
-    cancelled_ids = get_cancelled_ids(import_id, key)
+    subscribed_ids = get_subscribed_ids(import_id, key, proxies)
+    cancelled_ids = get_cancelled_ids(import_id, key, proxies)
     ids = set()
     if len(subscribed_ids) > 0:
         ids.update(subscribed_ids)
@@ -585,7 +595,12 @@ def import_posts(import_id, key, contributor_id=None, allowed_to_auto_import=Non
             # Push logging data.
             push_state('artists', campaign_id)
             # Begin importing.
-            import_posts_via_id(import_id, key, campaign_id, contributor_id=contributor_id, allowed_to_auto_import=allowed_to_auto_import, key_id=key_id)
+            import_posts_via_id(
+                import_id, key, campaign_id, proxies,
+                contributor_id=contributor_id,
+                allowed_to_auto_import=allowed_to_auto_import,
+                key_id=key_id
+            )
             log(import_id, f'Finished processing user {campaign_id}')
         log(import_id, 'Finished scanning for posts')
     else:
