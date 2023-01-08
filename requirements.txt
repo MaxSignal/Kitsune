@@ -1,10 +1,13 @@
 anyio==3.4.0
 appdirs==1.4.4
 astroid==2.4.2
+async-generator==1.10
+attrs==22.2.0
 autopep8==1.5.7
 backports.entry-points-selectable==1.1.0
 beautifulsoup4==4.9.3
 bjoern==3.1.0
+blinker==1.5
 bs4==0.0.1
 certifi==2020.12.5
 cfgv==3.3.1
@@ -56,8 +59,10 @@ psycopg2-pool==1.1
 py==1.10.0
 pycodestyle==2.8.0
 pycryptodome==3.10.1
+pydantic==1.10.4
 pyee==8.2.2
 pyflakes==2.4.0
+pyjd @ git+https://github.com/pglaum/pyjd@654ad69860e4314482f9bf4b6d6218f5b012e779
 pylint==2.6.0
 pyparsing==2.4.7
 PySocks==1.7.1
@@ -72,9 +77,11 @@ requests==2.25.1
 requests-toolbelt==0.9.1
 retry==0.9.2
 rfc3986==1.5.0
+sentry-sdk==1.12.1
 setproctitle==1.2.2
 six==1.15.0
 sniffio==1.2.0
+sortedcontainers==2.4.0
 soupsieve==2.1
 sqlparse==0.4.1
 sysrsync==1.1.0
@@ -89,12 +96,13 @@ typing_extensions==4.3.0
 tzlocal==2.1
 ujson==4.2.0
 unimport==0.11.1
-urllib3==1.26.2
+urllib3==1.26.13
 virtualenv==20.8.1
 webencodings==0.5.1
 websocket-client==1.1.0
 websockets==9.1
 Werkzeug==2.0.2
 wrapt==1.12.1
+wsproto==1.2.0
 yoyo-migrations==7.3.2
 zipp==3.6.0
