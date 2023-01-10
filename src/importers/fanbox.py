@@ -200,6 +200,10 @@ def download_fancard(key, user_id, import_id, proxies):
             None,
             fancard=True
         )
+    except requests.HTTPError as error:
+        if error.response.status_code != 404:
+            raise
+        log(import_id, f'User {user_id} has no fancard', to_client=False)
     except:
         log(import_id, f'Error downloading fancard for user {user_id}', 'exception')
 
