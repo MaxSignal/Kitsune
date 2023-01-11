@@ -41,17 +41,18 @@ def watch(queue_limit=config.pubsub_queue_limit):  # noqa: C901
                 threads_to_run.remove(thread)
 
         imports = list()
-        for key in scan_keys('imports:*'):
-            key_data = redis.get(key)
-            if key_data:
-                import_id = key.split(':')[1]
-                try:
-                    key_data = json.loads(key_data)
-                    imports += [(key, import_id, key_data)]
-                except json.decoder.JSONDecodeError:
-                    print(f'An decoding error occured while processing import request {key.decode("utf-8")}; are you sending malformed JSON?')
-                    delete_keys([key])
-                    continue
+        if len(threads_to_run) < queue_limit:
+            for key in scan_keys('imports:*'):
+                key_data = redis.get(key)
+                if key_data:
+                    import_id = key.split(':')[1]
+                    try:
+                        key_data = json.loads(key_data)
+                        imports += [(key, import_id, key_data)]
+                    except json.decoder.JSONDecodeError:
+                        print(f'An decoding error occured while processing import request {key.decode("utf-8")}; are you sending malformed JSON?')
+                        delete_keys([key])
+                        continue
 
         imports.sort(key=get_import_priority)
         for (key, import_id, key_data) in imports:
@@ -80,7 +81,8 @@ def watch(queue_limit=config.pubsub_queue_limit):  # noqa: C901
                     # allowed_to_scrape_dms = key_data.get('save_dms', False)
                     channel_ids = key_data.get('channel_ids')
                     contributor_id = key_data.get('contributor_id')
-
+                    if config.permitted_services and service not in config.permitted_services:
+                        continue
                     if service_key and service and allowed_to_save_session:
                         try:
                             encrypt_and_log_session(import_id, key_data)

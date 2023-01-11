@@ -21,6 +21,10 @@ rsync_data_options = [
     '--ignore-existing'
 ]
 
+# Set to only allow certain services on this instance
+# permitted_services = ['fantia']
+permitted_services = None
+
 # sentry information
 sentry_dsn = None
 
