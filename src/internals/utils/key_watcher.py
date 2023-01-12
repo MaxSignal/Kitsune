@@ -29,7 +29,7 @@ def watch(queue_limit=config.pubsub_queue_limit):  # noqa: C901
         return parse_int(key_data.get('priority', 0))
 
     archiver_id = ''.join(random.choice(string.ascii_letters + string.digits) for x in range(16))
-    delete_keys_pattern(["running_imports:*"])
+    # delete_keys_pattern(["running_imports:*"])
     setthreadtitle('KWATCHER')
     print(f'Key watcher ({archiver_id}) is starting!')
 
