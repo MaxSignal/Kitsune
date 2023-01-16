@@ -54,7 +54,7 @@ def watch(queue_limit=config.pubsub_queue_limit):  # noqa: C901
                         delete_keys([key])
                         continue
 
-        imports.sort(key=get_import_priority)
+        imports.sort(key=get_import_priority, reverse=True)
         for (key, import_id, key_data) in imports:
             if redis.get(f"running_imports:{archiver_id}:{import_id}"):
                 continue
