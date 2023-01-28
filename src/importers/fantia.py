@@ -68,7 +68,7 @@ def make_safe_request(*args, import_id=None, **kwargs) -> requests.models.Respon
                 recaptcha_response = task_status['solution']['gRecaptchaResponse']
         create_scrapper_session(useCloudscraper=False).post(
             'https://fantia.jp/recaptcha/verify',
-            headers={'user-agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) discord/0.0.305 Chrome/69.0.3497.128 Electron/4.0.8 Safari/537.36'},
+            headers={'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36'},
             proxies=proxies,
             cookies=jar,
             data=dict(
@@ -88,7 +88,7 @@ def enable_adult_mode(import_id, jar, proxies):
     # log(import_id, f"No active Fantia subscriptions or invalid key. No posts will be imported.", to_client = True)
     scraper = make_safe_request(
         'https://fantia.jp/mypage/account/edit',
-        headers={'user-agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) discord/0.0.305 Chrome/69.0.3497.128 Electron/4.0.8 Safari/537.36'},
+        headers={'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36'},
         import_id=import_id,
         proxies=proxies,
         cookies=jar
@@ -104,7 +104,7 @@ def enable_adult_mode(import_id, jar, proxies):
         authenticity_token = soup.select_one('.edit_user input[name=authenticity_token]')['value']
         create_scrapper_session(useCloudscraper=False).post(
             'https://fantia.jp/mypage/users/update_rating',
-            headers={'user-agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) discord/0.0.305 Chrome/69.0.3497.128 Electron/4.0.8 Safari/537.36'},
+            headers={'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36'},
             proxies=proxies,
             cookies=jar,
             data={
@@ -131,7 +131,7 @@ def disable_adult_mode(import_id, jar, proxies):
     authenticity_token = soup.select_one('.edit_user input[name=authenticity_token]')['value']
     create_scrapper_session(useCloudscraper=False).post(
         'https://fantia.jp/mypage/users/update_rating',
-        headers={'user-agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) discord/0.0.305 Chrome/69.0.3497.128 Electron/4.0.8 Safari/537.36'},
+        headers={'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36'},
         proxies=proxies,
         cookies=jar,
         data={
@@ -147,7 +147,7 @@ def import_fanclub(fanclub_id, import_id, jar, proxies, page=1):  # noqa: C901
     try:
         scraper = make_safe_request(
             f"https://fantia.jp/fanclubs/{fanclub_id}/posts?page={page}",
-            headers={'user-agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) discord/0.0.305 Chrome/69.0.3497.128 Electron/4.0.8 Safari/537.36'},
+            headers={'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36'},
             import_id=import_id,
             proxies=proxies,
             cookies=jar
@@ -186,7 +186,7 @@ def import_fanclub(fanclub_id, import_id, jar, proxies, page=1):  # noqa: C901
                 try:
                     post_page_scraper = create_scrapper_session(useCloudscraper=False).get(
                         f"https://fantia.jp/posts/{post_id}",
-                        headers={'user-agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) discord/0.0.305 Chrome/69.0.3497.128 Electron/4.0.8 Safari/537.36'},
+                        headers={'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36'},
                         proxies=proxies,
                         cookies=jar,
                     )
@@ -204,7 +204,7 @@ def import_fanclub(fanclub_id, import_id, jar, proxies, page=1):  # noqa: C901
                         f"https://fantia.jp/api/v1/posts/{post_id}",
                         headers={
                             'X-CSRF-Token': csrf_token,
-                            'user-agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) discord/0.0.305 Chrome/69.0.3497.128 Electron/4.0.8 Safari/537.36'
+                            'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36'
                         },
                         proxies=proxies,
                         cookies=jar,
@@ -245,7 +245,7 @@ def import_fanclub(fanclub_id, import_id, jar, proxies, page=1):  # noqa: C901
                         'fantia',
                         user_id,
                         post_id,
-                        headers={'user-agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) discord/0.0.305 Chrome/69.0.3497.128 Electron/4.0.8 Safari/537.36'},
+                        headers={'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36'},
                         proxies=proxies
                     )
                     post_model['file']['name'] = reported_filename
@@ -262,7 +262,7 @@ def import_fanclub(fanclub_id, import_id, jar, proxies, page=1):  # noqa: C901
                                 user_id,
                                 post_id,
                                 cookies=jar,
-                                headers={'user-agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) discord/0.0.305 Chrome/69.0.3497.128 Electron/4.0.8 Safari/537.36'},
+                                headers={'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36'},
                                 proxies=proxies
                             )
                             post_model['attachments'].append({
@@ -277,7 +277,7 @@ def import_fanclub(fanclub_id, import_id, jar, proxies, page=1):  # noqa: C901
                             post_id,
                             name=content['filename'],
                             cookies=jar,
-                            headers={'user-agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) discord/0.0.305 Chrome/69.0.3497.128 Electron/4.0.8 Safari/537.36'},
+                            headers={'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36'},
                             proxies=proxies
                         )
                         post_model['attachments'].append({
@@ -302,7 +302,7 @@ def import_fanclub(fanclub_id, import_id, jar, proxies, page=1):  # noqa: C901
                                     user_id,
                                     post_id,
                                     cookies=jar,
-                                    headers={'user-agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) discord/0.0.305 Chrome/69.0.3497.128 Electron/4.0.8 Safari/537.36'},
+                                    headers={'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36'},
                                     proxies=proxies
                                 )
                                 post_model['attachments'].append({
@@ -332,7 +332,7 @@ def import_fanclub(fanclub_id, import_id, jar, proxies, page=1):  # noqa: C901
             try:
                 scraper = make_safe_request(
                     f"https://fantia.jp/fanclubs/{fanclub_id}/posts?page={page}",
-                    headers={'user-agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) discord/0.0.305 Chrome/69.0.3497.128 Electron/4.0.8 Safari/537.36'},
+                    headers={'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36'},
                     import_id=import_id,
                     proxies=proxies,
                     cookies=jar
@@ -353,7 +353,7 @@ def import_fanclub(fanclub_id, import_id, jar, proxies, page=1):  # noqa: C901
 def get_paid_fanclubs(import_id, jar, proxies):
     scraper = make_safe_request(
         'https://fantia.jp/mypage/users/plans?type=not_free',
-        headers={'user-agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) discord/0.0.305 Chrome/69.0.3497.128 Electron/4.0.8 Safari/537.36'},
+        headers={'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36'},
         import_id=import_id,
         proxies=proxies,
         cookies=jar
