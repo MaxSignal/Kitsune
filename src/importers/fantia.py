@@ -89,6 +89,7 @@ def enable_adult_mode(import_id, jar, proxies):
     scraper = make_safe_request(
         'https://fantia.jp/mypage/account/edit',
         headers={'user-agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) discord/0.0.305 Chrome/69.0.3497.128 Electron/4.0.8 Safari/537.36'},
+        import_id=import_id,
         proxies=proxies,
         cookies=jar
     )
@@ -120,6 +121,7 @@ def enable_adult_mode(import_id, jar, proxies):
 def disable_adult_mode(import_id, jar, proxies):
     scraper = make_safe_request(
         'https://fantia.jp/mypage/account/edit',
+        import_id=import_id,
         proxies=proxies,
         cookies=jar
     )
@@ -146,6 +148,7 @@ def import_fanclub(fanclub_id, import_id, jar, proxies, page=1):  # noqa: C901
         scraper = make_safe_request(
             f"https://fantia.jp/fanclubs/{fanclub_id}/posts?page={page}",
             headers={'user-agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) discord/0.0.305 Chrome/69.0.3497.128 Electron/4.0.8 Safari/537.36'},
+            import_id=import_id,
             proxies=proxies,
             cookies=jar
         )
@@ -330,6 +333,7 @@ def import_fanclub(fanclub_id, import_id, jar, proxies, page=1):  # noqa: C901
                 scraper = make_safe_request(
                     f"https://fantia.jp/fanclubs/{fanclub_id}/posts?page={page}",
                     headers={'user-agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) discord/0.0.305 Chrome/69.0.3497.128 Electron/4.0.8 Safari/537.36'},
+                    import_id=import_id,
                     proxies=proxies,
                     cookies=jar
                 )
@@ -350,6 +354,7 @@ def get_paid_fanclubs(import_id, jar, proxies):
     scraper = make_safe_request(
         'https://fantia.jp/mypage/users/plans?type=not_free',
         headers={'user-agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) discord/0.0.305 Chrome/69.0.3497.128 Electron/4.0.8 Safari/537.36'},
+        import_id=import_id,
         proxies=proxies,
         cookies=jar
     )
