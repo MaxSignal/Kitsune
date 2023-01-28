@@ -158,7 +158,7 @@ def download_file(
     temp_name = str(uuid.uuid4()) + '.temp'
     tries = 10
 
-    if kwargs.get('proxies'):
+    if 'proxies' in kwargs:
         proxies = kwargs['proxies']
         kwargs.pop('proxies')
 

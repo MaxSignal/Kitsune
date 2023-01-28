@@ -179,9 +179,28 @@ def import_fanclub(fanclub_id, import_id, jar, proxies, page=1):  # noqa: C901
                     continue
 
                 try:
+                    post_page_scraper = create_scrapper_session(useCloudscraper=False).get(
+                        f"https://fantia.jp/posts/{post_id}",
+                        headers={'user-agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) discord/0.0.305 Chrome/69.0.3497.128 Electron/4.0.8 Safari/537.36'},
+                        proxies=proxies,
+                        cookies=jar,
+                    )
+                    post_page_data = post_page_scraper.text
+                    post_page_scraper.raise_for_status()
+                except requests.HTTPError as exc:
+                    log(import_id, f'Status code {exc.response.status_code} when contacting Fantia post page.', 'exception')
+                    continue
+
+                soup = BeautifulSoup(post_page_data, 'html.parser')
+                csrf_token = soup.select_one('meta[name="csrf-token"]')['content']
+
+                try:
                     post_scraper = create_scrapper_session(useCloudscraper=False).get(
                         f"https://fantia.jp/api/v1/posts/{post_id}",
-                        headers={'user-agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) discord/0.0.305 Chrome/69.0.3497.128 Electron/4.0.8 Safari/537.36'},
+                        headers={
+                            'X-CSRF-Token': csrf_token,
+                            'user-agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) discord/0.0.305 Chrome/69.0.3497.128 Electron/4.0.8 Safari/537.36'
+                        },
                         proxies=proxies,
                         cookies=jar,
                     )
