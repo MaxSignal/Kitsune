@@ -23,7 +23,7 @@ sys.setrecursionlimit(100000)
 # https://fantia.jp/api/v1/me/fanclubs',
 
 
-def make_safe_request(*args, **kwargs) -> requests.models.Response:
+def make_safe_request(*args, import_id=None, **kwargs) -> requests.models.Response:
     ''' Makes requests while automatically handling Fantia captchas. '''
 
     proxies = kwargs.get('proxies', None)
@@ -37,6 +37,8 @@ def make_safe_request(*args, **kwargs) -> requests.models.Response:
 
     soup = BeautifulSoup(data, 'html.parser')
     if soup.select_one('form#recaptcha_verify'):
+        if import_id:
+            log(import_id, f'Encountered captcha on URL {url}, solving...')
         authenticity_token = soup.select_one('input[name=authenticity_token]')['value']
         recaptcha_site_key = soup.select_one('input[name=recaptcha_site_key]')['value']
         task = scraper.post('https://api.anti-captcha.com/createTask', data=json.dumps(dict(
