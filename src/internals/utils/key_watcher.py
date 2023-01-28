@@ -40,26 +40,31 @@ def watch(queue_limit=config.pubsub_queue_limit):  # noqa: C901
             if not thread.is_alive():
                 threads_to_run.remove(thread)
 
-        imports = list()
         if len(threads_to_run) < queue_limit:
+            imports = list()
             for key in scan_keys('imports:*'):
+                (_, import_id, *flags) = key.split(':')
+                if len(threads_to_run) + len(imports) >= queue_limit:
+                    # Stop scanning, we've reached the queue limit.
+                    break
+                if redis.get(f'running_imports:{archiver_id}:{import_id}'):
+                    continue
+
                 key_data = redis.get(key)
                 if key_data:
-                    import_id = key.split(':')[1]
                     try:
                         key_data = json.loads(key_data)
-                        imports += [(key, import_id, key_data)]
                     except json.decoder.JSONDecodeError:
-                        print(f'An decoding error occured while processing import request {key.decode("utf-8")}; are you sending malformed JSON?')
+                        print(
+                            f'An decoding error occured while processing import request {key.decode("utf-8")}; '
+                            'Are you sending malformed JSON?'
+                        )
                         delete_keys([key])
                         continue
+                    imports += [(key, import_id, key_data)]
 
-        imports.sort(key=get_import_priority, reverse=True)
-        for (key, import_id, key_data) in imports:
-            if redis.get(f"running_imports:{archiver_id}:{import_id}"):
-                continue
-
-            if len(threads_to_run) < queue_limit:
+            imports.sort(key=get_import_priority, reverse=True)
+            for (key, import_id, key_data) in imports:
                 try:
                     target = None
                     args = None
