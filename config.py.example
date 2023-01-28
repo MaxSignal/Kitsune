@@ -69,3 +69,5 @@ salt = "lolololololololol"
 # enable/disable redis key pushing
 pubsub = True
 pubsub_queue_limit = 200
+
+anticap_token = None

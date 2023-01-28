@@ -23,9 +23,68 @@ sys.setrecursionlimit(100000)
 # https://fantia.jp/api/v1/me/fanclubs',
 
 
+def make_safe_request(*args, **kwargs) -> requests.models.Response:
+    ''' Makes requests while automatically handling Fantia captchas. '''
+
+    proxies = kwargs.get('proxies', None)
+    jar = kwargs.get('cookies', None)
+    (url, *_) = args + (None,)
+
+    scraper = create_scrapper_session(useCloudscraper=False)
+    response = scraper.get(*args, **kwargs)
+    response.raise_for_status()
+    data = response.text
+
+    soup = BeautifulSoup(data, 'html.parser')
+    if soup.select_one('form#recaptcha_verify'):
+        authenticity_token = soup.select_one('input[name=authenticity_token]')['value']
+        recaptcha_site_key = soup.select_one('input[name=recaptcha_site_key]')['value']
+        task = scraper.post('https://api.anti-captcha.com/createTask', data=json.dumps(dict(
+            clientKey=config.anticap_token,
+            softId=0,
+            task=dict(
+                type='RecaptchaV3TaskProxyless',
+                websiteURL='https://fantia.jp/recaptcha',
+                websiteKey=recaptcha_site_key,
+                minScore=0.3,
+                pageAction='contact',
+                isEnterprise=False
+            )
+        )))
+        task_data = task.json()
+
+        recaptcha_response = None
+        while recaptcha_response is None:
+            task_status = scraper.post(
+                'https://api.anti-captcha.com/getTaskResult',
+                data=json.dumps(dict(
+                    clientKey=config.anticap_token,
+                    taskId=task_data['taskId']
+                ))
+            ).json()
+            if task_status['status'] == 'ready':
+                recaptcha_response = task_status['solution']['gRecaptchaResponse']
+        create_scrapper_session(useCloudscraper=False).post(
+            'https://fantia.jp/recaptcha/verify',
+            headers={'user-agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) discord/0.0.305 Chrome/69.0.3497.128 Electron/4.0.8 Safari/537.36'},
+            proxies=proxies,
+            cookies=jar,
+            data=dict(
+                utf8='✓',
+                authenticity_token=authenticity_token,
+                recaptchaResponse=recaptcha_response,
+                commit='ページを表示する'
+            )
+        ).raise_for_status()
+        # Don't loop back if the original URL was to the `/recaptcha` endpoint
+        if 'https://fantia.jp/recaptcha' not in url:
+            return make_safe_request(*args, **kwargs)
+    return response
+
+
 def enable_adult_mode(import_id, jar, proxies):
     # log(import_id, f"No active Fantia subscriptions or invalid key. No posts will be imported.", to_client = True)
-    scraper = create_scrapper_session(useCloudscraper=False).get(
+    scraper = make_safe_request(
         'https://fantia.jp/mypage/account/edit',
         headers={'user-agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) discord/0.0.305 Chrome/69.0.3497.128 Electron/4.0.8 Safari/537.36'},
         proxies=proxies,
@@ -57,7 +116,7 @@ def enable_adult_mode(import_id, jar, proxies):
 
 
 def disable_adult_mode(import_id, jar, proxies):
-    scraper = create_scrapper_session(useCloudscraper=False).get(
+    scraper = make_safe_request(
         'https://fantia.jp/mypage/account/edit',
         proxies=proxies,
         cookies=jar
@@ -82,7 +141,7 @@ def disable_adult_mode(import_id, jar, proxies):
 
 def import_fanclub(fanclub_id, import_id, jar, proxies, page=1):  # noqa: C901
     try:
-        scraper = create_scrapper_session(useCloudscraper=False).get(
+        scraper = make_safe_request(
             f"https://fantia.jp/fanclubs/{fanclub_id}/posts?page={page}",
             headers={'user-agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) discord/0.0.305 Chrome/69.0.3497.128 Electron/4.0.8 Safari/537.36'},
             proxies=proxies,
@@ -247,7 +306,7 @@ def import_fanclub(fanclub_id, import_id, jar, proxies, page=1):  # noqa: C901
             log(import_id, 'Finished processing page. Processing next page.')
             page = page + 1
             try:
-                scraper = create_scrapper_session(useCloudscraper=False).get(
+                scraper = make_safe_request(
                     f"https://fantia.jp/fanclubs/{fanclub_id}/posts?page={page}",
                     headers={'user-agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) discord/0.0.305 Chrome/69.0.3497.128 Electron/4.0.8 Safari/537.36'},
                     proxies=proxies,
@@ -267,7 +326,7 @@ def import_fanclub(fanclub_id, import_id, jar, proxies, page=1):  # noqa: C901
 
 
 def get_paid_fanclubs(import_id, jar, proxies):
-    scraper = create_scrapper_session(useCloudscraper=False).get(
+    scraper = make_safe_request(
         'https://fantia.jp/mypage/users/plans?type=not_free',
         headers={'user-agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) discord/0.0.305 Chrome/69.0.3497.128 Electron/4.0.8 Safari/537.36'},
         proxies=proxies,
