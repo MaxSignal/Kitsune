@@ -91,8 +91,7 @@ def make_safe_request(import_id, *args, **kwargs) -> requests.models.Response:
 
 def enable_adult_mode(import_id, jar, proxies):
     # log(import_id, f"No active Fantia subscriptions or invalid key. No posts will be imported.", to_client = True)
-    scraper = make_safe_request(
-        import_id,
+    scraper = create_scrapper_session(useCloudscraper=False).get(
         'https://fantia.jp/mypage/account/edit',
         headers={'user-agent': ua},
         proxies=proxies,
@@ -124,8 +123,7 @@ def enable_adult_mode(import_id, jar, proxies):
 
 
 def disable_adult_mode(import_id, jar, proxies):
-    scraper = make_safe_request(
-        import_id,
+    scraper = create_scrapper_session(useCloudscraper=False).get(
         'https://fantia.jp/mypage/account/edit',
         proxies=proxies,
         cookies=jar
@@ -150,8 +148,7 @@ def disable_adult_mode(import_id, jar, proxies):
 
 def import_fanclub(fanclub_id, import_id, jar, proxies, page=1):  # noqa: C901
     try:
-        scraper = make_safe_request(
-            import_id,
+        scraper = create_scrapper_session(useCloudscraper=False).get(
             f"https://fantia.jp/fanclubs/{fanclub_id}/posts?page={page}",
             headers={'user-agent': ua},
             proxies=proxies,
@@ -335,8 +332,7 @@ def import_fanclub(fanclub_id, import_id, jar, proxies, page=1):  # noqa: C901
             log(import_id, 'Finished processing page. Processing next page.')
             page = page + 1
             try:
-                scraper = make_safe_request(
-                    import_id,
+                scraper = create_scrapper_session(useCloudscraper=False).get(
                     f"https://fantia.jp/fanclubs/{fanclub_id}/posts?page={page}",
                     headers={'user-agent': ua},
                     proxies=proxies,
@@ -356,8 +352,7 @@ def import_fanclub(fanclub_id, import_id, jar, proxies, page=1):  # noqa: C901
 
 
 def get_paid_fanclubs(import_id, jar, proxies):
-    scraper = make_safe_request(
-        import_id,
+    scraper = create_scrapper_session(useCloudscraper=False).get(
         'https://fantia.jp/mypage/users/plans?type=not_free',
         headers={'user-agent': ua},
         proxies=proxies,
