@@ -369,6 +369,18 @@ def get_paid_fanclubs(import_id, jar, proxies):
     return set(fanclub_link["href"].lstrip("/fanclubs/") for fanclub_link in soup.select("div.mb-5-children > div:nth-of-type(1) a[href^=\"/fanclubs\"]"))
 
 
+def get_fanclubs(import_id, jar, proxies):
+    scraper = create_scrapper_session(useCloudscraper=False).get(
+        'https://fantia.jp/api/v1/me/fanclubs',
+        headers={'user-agent': ua},
+        proxies=proxies,
+        cookies=jar
+    )
+    scraper.raise_for_status()
+    scraper_data = scraper.json()
+    return scraper_data['fanclub_ids']
+
+
 def import_posts(import_id, key, contributor_id, allowed_to_auto_import, key_id):  # noqa: C901
     r = get_redis()
     data = json.loads(r.get(f'imports:{import_id}'))
@@ -394,7 +406,7 @@ def import_posts(import_id, key, contributor_id, allowed_to_auto_import, key_id)
         proxies['headers'] = {'Cookie': " ".join(f'{k}={v};' for (k, v) in cookies.items())}
     try:
         mode_switched = enable_adult_mode(import_id, jar, proxies)
-        fanclub_ids = get_paid_fanclubs(import_id, jar, proxies)
+        fanclub_ids = get_fanclubs(import_id, jar, proxies)
     except:
         log(import_id, "Error occurred during preflight. Stopping import.", 'exception')
         if (key_id):
@@ -410,11 +422,33 @@ def import_posts(import_id, key, contributor_id, allowed_to_auto_import, key_id)
 
     if len(fanclub_ids) > 0:
         for fanclub_id in fanclub_ids:
-            # Push logging data.
-            push_state('artists', fanclub_id)
-            # Begin importing.
-            log(import_id, f'Importing fanclub {fanclub_id}', to_client=True)
-            import_fanclub(fanclub_id, import_id, jar, proxies)
+            # Determine if this fanclub has a paid subscription.
+            scraper = create_scrapper_session(useCloudscraper=False).get(
+                f'https://fantia.jp/api/v1/fanclubs/{fanclub_id}',
+                headers={'user-agent': ua},
+                proxies=proxies,
+                cookies=jar
+            )
+            scraper.raise_for_status()
+            scraper_data = scraper.json()
+            should_import_fanclub = False
+            for plan in scraper_data['fanclub']['plans']:
+                if plan['price'] > 0 and plan['order']['status'] == 'joined':
+                    should_import_fanclub = True
+                    break
+            if should_import_fanclub:
+                # Push logging data.
+                push_state('artists', fanclub_id)
+                # Begin importing.
+                log(import_id, f'Importing fanclub {fanclub_id}', to_client=True)
+                import_fanclub(fanclub_id, import_id, jar, proxies)
+                continue
+            log(
+                import_id,
+                'No paid subscription found for fanclub '
+                f'{fanclub_id}, skipping...',
+                to_client=True
+            )
     else:
         log(import_id, "No paid subscriptions found. No posts will be imported.", to_client=True)
 
