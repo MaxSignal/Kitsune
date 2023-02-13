@@ -61,6 +61,8 @@ def watch(queue_limit=config.pubsub_queue_limit):  # noqa: C901
                         )
                         delete_keys([key])
                         continue
+                    if config.permitted_services and key_data['service'] not in config.permitted_services:
+                        continue
                     imports += [(key, import_id, key_data)]
 
             imports.sort(key=get_import_priority, reverse=True)
@@ -82,18 +84,10 @@ def watch(queue_limit=config.pubsub_queue_limit):  # noqa: C901
                     key_id = key_data.get('key_id', None)
                     service = key_data['service']
                     allowed_to_auto_import = key_data.get('auto_import', False)
-                    allowed_to_save_session = key_data.get('save_session_key', False)
+                    # allowed_to_save_session = key_data.get('save_session_key', False)
                     # allowed_to_scrape_dms = key_data.get('save_dms', False)
                     channel_ids = key_data.get('channel_ids')
                     contributor_id = key_data.get('contributor_id')
-                    if config.permitted_services and service not in config.permitted_services:
-                        continue
-                    if service_key and service and allowed_to_save_session:
-                        try:
-                            encrypt_and_log_session(import_id, key_data)
-                        except:
-                            logger.log(import_id, 'Exception occured while logging session.', 'exception', to_client=False)
-
                     if service == 'patreon':
                         continue
                     elif service == 'fanbox':
